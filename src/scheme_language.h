@@ -20,10 +20,12 @@ using namespace godot;
 class SchemeLanguage : public ScriptLanguageExtension {
     GDCLASS(SchemeLanguage, ScriptLanguageExtension)
 
-    // friend class SchemeScript;
-    SchemeBinder *binder;
+    friend class SchemeScript;
 
     static SchemeLanguage* singleton;
+
+    HashMap<String, Ref<Script>> scripts;
+    SchemeBinder *binder;
     Ref<Mutex> instance_lock;
 
 protected:
@@ -46,12 +48,20 @@ public:
 
     void set_binder(SchemeBinder* b) {
         binder = b;
+        binder->initialize();
+    }
+
+    SchemeBinder* get_binder() {
+        return binder;
     }
 
     // Internal code for use in extension module.
-    static String module_get_extension_constant();
-    static String module_get_type_constant();
+    static String s_get_extension();
+    static String s_get_type();
     // Ref<Script> module_create_script() const;
+
+    // Absolute file path of directory containing the library file for this plugin
+    String get_install_dir();
 
     void _init() override;
 

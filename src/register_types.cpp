@@ -48,7 +48,7 @@
 
 #include "scheme_language.h"
 #include "scheme_script.h"
-#include "binder/chibi_scheme_binder.h"
+#include "binder/racket_binder.h"
 
 // #include "test_language.h"
 
@@ -60,10 +60,10 @@ auto INIT_LEVEL = MODULE_INITIALIZATION_LEVEL_SCENE;
 
 Ref<SchemeScriptResourceLoader> loader;
 Ref<SchemeScriptResourceSaver> saver;
-SchemeLanguage* language = nullptr;
 
-// TestLanguage* testlang = nullptr;
-ChibiSchemeBinder binder;
+SchemeLanguage* language = nullptr;
+SchemeBinder* binder;
+
 
 void initialize_scheme_module(ModuleInitializationLevel p_level) {
     if (p_level != INIT_LEVEL) {
@@ -82,9 +82,12 @@ void initialize_scheme_module(ModuleInitializationLevel p_level) {
     godot::UtilityFunctions::print("Scheme initialized");
 
     language = memnew(SchemeLanguage());
-    language->set_binder(&binder);
-    // Engine::get_singleton()->register_script_language(language);
     CRASH_COND_MSG(Engine::get_singleton()->register_script_language(language) != OK, "scheme: language register failed");
+
+    // TODO: selectable binder if needed
+    // binder = memnew(ChibiSchemeBinder());
+    binder = memnew(RacketBinder());
+    language->set_binder(binder);
 
     godot::UtilityFunctions::print_verbose("Scheme registered");
 

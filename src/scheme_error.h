@@ -1,6 +1,10 @@
 #pragma once
 
-	// copy-paste of godot::Callable::CallError
+#include "godot_cpp/variant/string.hpp"
+
+// class String;
+
+// copy-paste of godot::Callable::CallError
 class SchemeCallError {
 public:
     enum Error {
@@ -15,5 +19,6 @@ public:
     Error error = Error::CALL_OK;
     int argument = 0;
     int expected = 0;
+    godot::String message;
 };
 

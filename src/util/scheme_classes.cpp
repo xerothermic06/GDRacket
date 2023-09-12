@@ -101,6 +101,10 @@ int GDClassDefinition::set_prop(const String &p_name, const GDClassProperty &p_p
     }
 }
 
+
+bool GDClassDefinition::has_base_script() const {
+    return base_script.is_valid();
+}
 /* PROPERTY */
 
 // GDProperty luascript_read_property(lua_State *L, int p_idx) {

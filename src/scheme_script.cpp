@@ -20,6 +20,7 @@ SchemeScript::~SchemeScript() {
 
 
 Error SchemeScript::load() {
+    UtilityFunctions::print_verbose("schemescript load");
     class_definition = language->binder->scheme_create_definition(*this);
     return Error::OK;
 }
@@ -128,9 +129,10 @@ StringName SchemeScript::_get_instance_base_type() const {
     }
 
     auto base_script = class_definition.base_script;
-    if (base_script != nullptr && base_script->_is_valid())
-        return base_script->_get_instance_base_type();
-
+    // if (base_script != nullptr && base_script->_is_valid())
+    if (class_definition.has_base_script()) {
+        return base_script->get_instance_base_type();
+    }
     return StringName();
 }
 
@@ -185,13 +187,13 @@ bool SchemeScript::_inherits_script(const Ref<Script> &p_script) const {
     if (script.is_null())
         return false;
 
-    const Script *cur_script = this;
+    Ref<Script> cur_script = this;
 
-    while (cur_script) {
+    while (cur_script.is_valid()) {
         if (cur_script == script.ptr())
             return true;
 
-        cur_script = cur_script->get_base_script().ptr();
+        cur_script = cur_script->get_base_script();
     }
 
     return false;
@@ -204,7 +206,8 @@ bool SchemeScript::_inherits_script(const Ref<Script> &p_script) const {
 
 
 bool SchemeScript::_instance_has(Object *object) const {
-    auto lock(*SchemeLanguage::singleton->instance_lock.ptr());
+    // auto lock(*SchemeLanguage::singleton->instance_lock.ptr());
+    SchemeLanguage::get_singleton()->get_instance_lock();
     return instances.has(object->get_instance_id());
 }
 
@@ -231,8 +234,8 @@ Variant SchemeScript::_get_property_default_value(const StringName &property) co
     if (prop) {
         return prop->value;
     }
-    if (class_definition.base_script && class_definition.base_script->_is_valid()) {
-        return class_definition.base_script->_get_property_default_value(property);
+    if (class_definition.has_base_script()) {
+        return class_definition.base_script->get_property_default_value(property);
     }
     return Variant();
 }
@@ -281,24 +284,26 @@ Variant SchemeScriptResourceLoader::_load(const String &path, const String &orig
 		return ERR_CANT_CREATE;
 	}
     UtilityFunctions::print("Loaded scheme script");
-    const SchemeScript scr = *script.ptr();
+    // const SchemeScript scr = *script.ptr();
 
     script->load();
     // script->class_definition = language->binder.scheme_create_definition(scr);
+    SchemeLanguage::get_singleton()->scripts.insert(path, script);
 
     return script;
 }
 
 
 PackedStringArray SchemeScriptResourceLoader::_get_recognized_extensions() const {
+    // TODO: Add support for module files
     PackedStringArray extensions;
-    extensions.append(SchemeLanguage::module_get_extension_constant());
+    extensions.append(SchemeLanguage::s_get_extension());
     return extensions;
 }
 
 
 bool SchemeScriptResourceLoader::_handles_type(const StringName& p_type) const {
-    return (p_type == SchemeLanguage::module_get_type_constant());
+    return (p_type == SchemeLanguage::s_get_type());
 }
 
 String SchemeScriptResourceLoader::_get_resource_type(const String& p_path) const {
@@ -307,21 +312,20 @@ String SchemeScriptResourceLoader::_get_resource_type(const String& p_path) cons
     //     return SchemeLanguage::module_get_type_constant();
     // }
     // return "";
-    return SchemeLanguage::module_get_type_constant();
+    return SchemeLanguage::s_get_type();
 }
-
 
 PackedStringArray SchemeScriptResourceLoader::_get_dependencies(const String& path, bool add_types) const {
     return PackedStringArray();
 }
 
 bool SchemeScriptResourceLoader::_recognize_path(const String &path, const StringName &type) const {
-	return path.get_extension() == SchemeLanguage::module_get_extension_constant();
+	return path.get_extension() == SchemeLanguage::s_get_extension();
 }
 
 
 String SchemeScriptResourceLoader::_get_resource_script_class(const String &path) const {
-    return "SchemeScript";
+    return SchemeLanguage::s_get_type();
 }
 
 
@@ -396,6 +400,6 @@ bool SchemeScriptResourceSaver::_recognize(const Ref<Resource>& p_resource) cons
 
 PackedStringArray SchemeScriptResourceSaver::_get_recognized_extensions(const Ref<Resource>& resource) const {
     PackedStringArray extensions;
-    extensions.append(SchemeLanguage::module_get_extension_constant());
+    extensions.append(SchemeLanguage::s_get_extension());
     return extensions;
 }

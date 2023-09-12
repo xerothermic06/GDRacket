@@ -1,3 +1,6 @@
+#include "util/scheme_util.h"
+
+#include <iostream>
 
 // #include <godot_cpp/classes/engine.hpp>
 // #include <godot_cpp/classes/file_access.hpp>
@@ -6,8 +9,6 @@
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/string.hpp>
 // #include <godot_cpp/variant/string_name.hpp>
-
-#include "util/scheme_util.h"
 
 String SchemeUtil::resource_type_hint(const String &p_type) {
     // see core/object/object.h
@@ -18,4 +19,20 @@ String SchemeUtil::resource_type_hint(const String &p_type) {
     hint_values[2] = p_type;
 
     return String("{0}/{1}:{2}").format(hint_values);
+}
+
+
+const char* SchemeUtil::string_to_charptr(const String s) {
+    CharString st = s.utf8();
+    return st.get_data();
+}
+
+
+void SchemeUtil::log(const String msg) {
+    std::cout << msg.utf8().get_data();
+}
+
+
+void SchemeUtil::logln(const String msg) {
+    std::cout << msg.utf8().get_data() << std::endl;
 }

@@ -6,3 +6,6 @@
 	path = scheme/chibi-scheme
 	url = https://github.com/ashinn/chibi-scheme.git
 	branch = master
+[submodule "scheme/racket"]
+	path = scheme/racket
+	url = https://github.com/racket/racket.git

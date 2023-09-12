@@ -81,8 +81,6 @@ public:
 	virtual void initialize() = 0;
 	// exit, de-initialization, etc
 	virtual void uninitialize() = 0;
-	virtual void language_finalize() = 0;
-	virtual void frame() = 0;
 
 	// virtual JavaScriptGCHandler *alloc_object_binding_data(Object *p_object) = 0;
 	// virtual void free_object_binding_data(JavaScriptGCHandler *p_gc_handle) = 0;
@@ -108,11 +106,11 @@ public:
 	// virtual bool validate(const String &p_code, const String &p_path, SchemeError *r_error) = 0;
 
 	// virtual Variant call_method(const JavaScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) = 0;
-
+	virtual void scheme_initialize_instance(SchemeScriptInstance &p_target) = 0;
 	virtual int32_t scheme_get_member_line(SchemeScriptInstance &p_target, const StringName &member) = 0;
 	virtual GDClassDefinition scheme_create_definition(const SchemeScript &script) = 0;
-	virtual Variant scheme_call(SchemeScriptInstance &p_target, const Variant **p_args, int p_argcount, SchemeCallError &r_error) = 0;
-	virtual void scheme_free(uint64_t object_id) = 0;
+	virtual Variant scheme_call(SchemeScriptInstance &p_target, const String p_func_name, const Variant **p_args, int p_argcount, SchemeCallError &r_error) = 0;
+	virtual void scheme_free_instance(SchemeScriptInstance &p_target) = 0;
 
 #ifdef TOOLS_ENABLED
 	virtual const Dictionary &get_modified_api() const;

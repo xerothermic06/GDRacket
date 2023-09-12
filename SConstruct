@@ -31,6 +31,22 @@ if SCHEME_ENGINE == "chibi-scheme":
     env.Append(LIBS=["ws2_32"])
     sources += Glob("scheme/chibi-scheme/*.c", exclude=[ 'scheme\chibi-scheme\plan9*', '*process*' ])
 
+env.Append(CPPPATH=["scheme/racket/racket/src/bc"])
+env.Append(CPPPATH=["scheme/racket/racket/src/bc/include"])
+env.Append(CPPPATH=["scheme/racket/racket/src/bc/src"])
+env.Append(CPPPATH=["scheme/racket/racket/src/bc/rktio"])
+env.Append(CPPPATH=["scheme/racket/racket/src/rktio"])
+env.Append(CPPPATH=["scheme/racket/racket/src/worksp"])
+# scheme\racket\racket\src\bc\lib\libracket3mxxxxxxx.lib
+env.Append(LIBS=[
+    # "scheme/racket/racket/src/bc/lib/libracket3mxxxxxxx.lib",
+    "scheme/racket/racket/src/bc/lib/libracketxxxxxxx.lib",
+    "scheme/racket/racket/src/bc/lib/libmzgcxxxxxxx.lib",
+    "scheme/racket/racket/src/bc/rktio/librktio.lib",
+])
+# sources += "./base.c"
+
+
 if env["platform"] == "macos":
     library = env.SharedLibrary(
         "demo/bin/libgdscheme.{}.{}.framework/libgdscheme.{}.{}".format(
@@ -45,3 +61,13 @@ else:
     )
 
 Default(library)
+
+# # Testing stuff
+# test_src = Glob("scheme/chibi-scheme/*.c",
+#     exclude=[ 'scheme\chibi-scheme\plan9*', '*process*', "scheme\chibi-scheme\main*" ]) + ["chibi_test.cpp"]
+# # test_src = test_src + Glob("src/binder/racket_modules.c")
+# pgm = env.Program(
+#     "chibi_test",
+#     source=test_src
+# )
+# Default(pgm)

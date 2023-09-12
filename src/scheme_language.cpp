@@ -19,6 +19,12 @@ SchemeLanguage::~SchemeLanguage() {
 }
 
 
+//TODO: Change this to do it right obv
+String SchemeLanguage::get_install_dir() {
+    return "D:\\projects\\godot\\bwjam_2023\\scheme\\";
+}
+
+
 void SchemeLanguage::_thread_enter() {
 }
 
@@ -35,20 +41,20 @@ String SchemeLanguage::_get_name() const {
 void SchemeLanguage::_init() {
 }
 
-String SchemeLanguage::module_get_type_constant() {
+String SchemeLanguage::s_get_type() {
     return "SchemeScript";
 }
 
 String SchemeLanguage::_get_type() const {
-    return module_get_type_constant();
+    return s_get_type();
 }
 
-String SchemeLanguage::module_get_extension_constant() {
-    return "scm";
+String SchemeLanguage::s_get_extension() {
+    return "rkt";
 }
 
 String SchemeLanguage::_get_extension() const {
-    return module_get_extension_constant();
+    return s_get_extension();
 }
 
 void SchemeLanguage::_finish() {

@@ -1,10 +1,11 @@
 #pragma once
 
 #include <gdextension_interface.h>
-// #include <lua.h>
+
 #include <godot_cpp/classes/global_constants.hpp>
 #include <godot_cpp/classes/multiplayer_api.hpp>
 #include <godot_cpp/classes/multiplayer_peer.hpp>
+#include <godot_cpp/classes/script.hpp>
 #include <godot_cpp/core/type_info.hpp>
 #include <godot_cpp/templates/hash_map.hpp>
 #include <godot_cpp/templates/vector.hpp>
@@ -19,9 +20,7 @@
 #include "util/scheme_class_db.h"
 #include "util/scheme_util.h"
 
-// #include "luagd_permissions.h"
-// #include "utils.h"
-
+// Circular dep
 class SchemeScript;
 
 using namespace godot;
@@ -114,7 +113,7 @@ struct GDRpc {
 struct GDClassDefinition {
     String name;
     String extends = "RefCounted";
-    SchemeScript *base_script = nullptr;
+    Ref<Script> base_script = nullptr;
 
     String icon_path;
 
@@ -130,6 +129,7 @@ struct GDClassDefinition {
     HashMap<StringName, int> constants;
 
     int set_prop(const String &p_name, const GDClassProperty &p_prop);
+    bool has_base_script() const;
 };
 
 // void luascript_get_classdef_or_type(lua_State *L, int p_index, String &r_type, LuauScript *&r_script);
