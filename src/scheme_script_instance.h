@@ -55,7 +55,7 @@ public:
     // property_can_revert_func
     // property_get_revert_func
 
-	virtual Object *get_owner() { return owner_object; }
+	virtual Object *get_owner() const { return owner_object; }
     // void _get_property_state(GDExtensionScriptInstanceDataPtr p_instance, GDExtensionScriptInstancePropertyStateAdd p_add_func, void *p_userdata);
 
 	virtual void get_method_list(List<MethodInfo> *p_list) const;
@@ -66,7 +66,7 @@ public:
 
 	virtual bool has_method(const StringName &p_method) const;
 
-	virtual void notification(int p_notification) {};
+	virtual void notification(int p_notification);
     // void notification(GDExtensionScriptInstanceDataPtr p_instance, int32_t p_what);
 
     virtual void to_string(GDExtensionScriptInstanceDataPtr p_instance, GDExtensionBool *r_is_valid, GDExtensionStringPtr r_out) {

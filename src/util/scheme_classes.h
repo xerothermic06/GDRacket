@@ -25,10 +25,6 @@ class SchemeScript;
 
 using namespace godot;
 
-// #define LUASCRIPT_MODULE_TABLE "_MODULES"
-// #define LUASCRIPT_MT_SCRIPT "__script"
-
-// struct lua_State;
 
 struct GDProperty {
     GDExtensionVariantType type = GDEXTENSION_VARIANT_TYPE_NIL;
@@ -39,7 +35,6 @@ struct GDProperty {
 
     PropertyHint hint = PROPERTY_HINT_NONE;
     String hint_string;
-
 
     operator Dictionary() const;
     operator Variant() const;
@@ -129,13 +124,8 @@ struct GDClassDefinition {
     HashMap<StringName, int> constants;
 
     int set_prop(const String &p_name, const GDClassProperty &p_prop);
+    void set_method(const String &p_name, const GDMethod &p_method);
+    bool has_method(const String &p_name) const;
     bool has_base_script() const;
 };
 
-// void luascript_get_classdef_or_type(lua_State *L, int p_index, String &r_type, LuauScript *&r_script);
-// String luascript_get_scriptname_or_type(lua_State *L, int p_index, LuauScript **r_script = nullptr);
-
-// GDProperty luascript_read_property(lua_State *L, int p_idx);
-// void luascript_openlibs(lua_State *L);
-
-// LuauScript *luascript_class_table_get_script(lua_State *L, int p_i);

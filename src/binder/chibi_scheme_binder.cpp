@@ -122,7 +122,7 @@ GDClassDefinition ChibiSchemeBinder::scheme_create_definition(const SchemeScript
 }
 
 
-Variant ChibiSchemeBinder::scheme_call(SchemeScriptInstance &p_target, const String p_func_name,  const Variant **p_args, int p_argcount, SchemeCallError &r_error) {
+Variant ChibiSchemeBinder::scheme_call(SchemeScriptInstance &p_target, const String p_func_name,  const Variant *p_args, int p_argcount, SchemeCallError &r_error) {
     sexp_gc_var2(proc, invoke);
     sexp_gc_preserve2(ctx, proc, invoke);
     Variant result;

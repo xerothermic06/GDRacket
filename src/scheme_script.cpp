@@ -15,12 +15,10 @@ SchemeScript::SchemeScript() {
 
 
 SchemeScript::~SchemeScript() {
-    UtilityFunctions::print_verbose("schemescript finalizer");
 }
 
 
 Error SchemeScript::load() {
-    UtilityFunctions::print_verbose("schemescript load");
     class_definition = language->binder->scheme_create_definition(*this);
     return Error::OK;
 }
@@ -272,7 +270,6 @@ Variant SchemeScriptResourceLoader::_load(const String &path, const String &orig
 
 	// String source = script->get_source_code();
 
-    UtilityFunctions::print_verbose(path);
     Ref<SchemeScript> script;// = language->module_create_script();
     script.instantiate();
 
@@ -283,7 +280,6 @@ Variant SchemeScriptResourceLoader::_load(const String &path, const String &orig
 	if (file->get_error() != OK && file->get_error() != ERR_FILE_EOF) {
 		return ERR_CANT_CREATE;
 	}
-    UtilityFunctions::print("Loaded scheme script");
     // const SchemeScript scr = *script.ptr();
 
     script->load();

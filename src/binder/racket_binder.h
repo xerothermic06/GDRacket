@@ -50,7 +50,7 @@ class RacketRequest {
     // Scheme_Object* (*mapper)(Scheme_Env*);
 
 public:
-    RacketRequest();
+    RacketRequest() {};
 };
 
 
@@ -79,24 +79,22 @@ public:
         static_assert(size > 0);
         Scheme_Object* rest[size] = {ts...};
         Scheme_Object* list = scheme_build_list(size, rest);
-        // return scheme_eval(list, env);
         return eval(list);
     }
 
-    // Scheme_Object* eval_funcptr(Scheme_Object* (*mapper)(Scheme_Env*));
-
 };
 
-
-// typedef struct RacketEnvironment {
-// };
 
 // Root interface for specific scheme implementations.
 class RacketBinder : public SchemeBinder {
 
     RacketEnvironment* environment;
     HashMap<uint32_t, Scheme_Env*> script_id_namespace_map;
+    // Mapping from Script ID -> Racket symbol for module path
     HashMap<uint32_t, Scheme_Object*> script_id_class_map;
+    // Mapping from Script ID -> class definition copy
+    HashMap<uint32_t, GDClassDefinition> script_id_definition_map;
+    // Mapping from ScriptInstance ID -> Racket object for instance
     HashMap<uint32_t, Scheme_Object*> instance_id_ctx_map;
 
 protected:
@@ -118,8 +116,10 @@ public:
     int32_t scheme_get_member_line(SchemeScriptInstance &p_target, const StringName &member);
 
     void scheme_initialize_instance(SchemeScriptInstance &p_target);
-    Variant scheme_call(SchemeScriptInstance &p_target, const String p_func_name, const Variant **p_args, int p_argcount, SchemeCallError &r_error);
-
+    Variant scheme_call(SchemeScriptInstance &p_target, const String p_func_name, const Variant **p_args, int p_argcount, SchemeCallError* r_error);
+	bool set(SchemeScriptInstance &p_target, const StringName &p_name, const Variant &p_value);
+	bool get(const SchemeScriptInstance &p_target, const StringName, Variant &r_ret) const;
+	bool has_method(const SchemeScriptInstance &p_target, const StringName &p_method) const;
     void scheme_free_instance(SchemeScriptInstance &p_target);
 
 #ifdef TOOLS_ENABLED

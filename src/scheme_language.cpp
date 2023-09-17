@@ -107,9 +107,7 @@ String SchemeLanguage::_validate_path(const String& path) const {
 // }
 
 Object* SchemeLanguage::_create_script() const {
-    // return _do_create_script();
     SchemeScript* created = memnew(SchemeScript());
-    UtilityFunctions::print("Creating scheme script");
     created->language = const_cast<SchemeLanguage*>(this);
     return created;
 }

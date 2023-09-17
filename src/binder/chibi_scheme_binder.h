@@ -21,7 +21,7 @@ public:
 	void scheme_initialize_instance(SchemeScriptInstance &p_target);
 	int32_t scheme_get_member_line(SchemeScriptInstance &p_target, const StringName &member);
 	GDClassDefinition scheme_create_definition(const SchemeScript &script);
-	Variant scheme_call(SchemeScriptInstance &p_target, const String p_func_name, const Variant **p_args, int p_argcount, SchemeCallError &r_error);
+	Variant scheme_call(SchemeScriptInstance &p_target, const String p_func_name, const Variant *p_args, int p_argcount, SchemeCallError &r_error);
 	void scheme_free_instance(SchemeScriptInstance &p_target);
 
 };

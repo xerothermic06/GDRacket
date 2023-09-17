@@ -79,8 +79,6 @@ void initialize_scheme_module(ModuleInitializationLevel p_level) {
     ClassDB::register_class<SchemeScriptResourceLoader>();
     ClassDB::register_class<SchemeScriptResourceSaver>();
 
-    godot::UtilityFunctions::print("Scheme initialized");
-
     language = memnew(SchemeLanguage());
     CRASH_COND_MSG(Engine::get_singleton()->register_script_language(language) != OK, "scheme: language register failed");
 
@@ -88,8 +86,6 @@ void initialize_scheme_module(ModuleInitializationLevel p_level) {
     // binder = memnew(ChibiSchemeBinder());
     binder = memnew(RacketBinder());
     language->set_binder(binder);
-
-    godot::UtilityFunctions::print_verbose("Scheme registered");
 
     loader.instantiate();
     loader->language = language;

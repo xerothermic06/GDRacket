@@ -1,15 +1,15 @@
 #lang racket
 
-(require racket/vector)
-
-(provide
-    vector-map-break
-    read-multi
-    eval-handle
-    eval-source
-    attach-modules)
+(require
+  racket/vector
+  racket/struct
+  gdracket/godot)
 
 
+(require (prefix-in gdp: 'gd-primitive))
+
+
+(provide vector-map-break)
 (define vector-map-break
   (lambda (vec proc break-proc)
     (letrec
@@ -22,6 +22,7 @@
     (iter (void) vec))))
 
 
+(provide read-multi)
 (define read-multi
   (lambda (in)
     (letrec ([read-rest (lambda (in vec)
@@ -32,14 +33,20 @@
       (read-rest in #() ))))
 
 
+; Root eval function for all calls into Racket from native library. Simplifies
+; unexpected exception handling.
+(provide eval-handle)
 (define eval-handle
-  (lambda (sexpr name-space)
+  (lambda (sexpr (name-space (current-namespace)))
       (with-handlers ([void (lambda (exn)
-                      (displayln (continuation-mark-set->context (exn-continuation-marks exn)))
+                      ; (displayln (continuation-mark-set->context (exn-continuation-marks exn)))
+                      ; (displayln (exn-message exn))
+                      ; (flush-output)
                       (cons #f exn))])
           (cons #t (eval sexpr name-space)))))
 
 
+(provide eval-source)
 (define eval-source
   (lambda (source-str module-name name-space)
     (parameterize
@@ -53,9 +60,44 @@
         (vector-map-break exprs-vec eval-handle-in-ns break-cond)))))
 
 
+; Read a GDRacket class file as a module and return the class info object from it.
+(provide register-gd-class)
+(define register-gd-class
+  (lambda (source-str module-name name-space)
+    (let
+      ([fn (lambda ()
+        (eval-source source-str module-name name-space)
+        (let ([gd-info (dynamic-require `',module-name 'godot-class-info)])
+          gd-info)
+        )])
+    (eval-handle `(,fn) name-space))))
+
+
+(provide attach-modules)
 (define attach-modules
   (lambda (src-ns dest-ns module-list)
     (map
       (lambda (modul)
         (namespace-attach-module src-ns modul dest-ns))
       module-list)))
+
+
+(provide struct->list-ret-false)
+(define struct->list-ret-false
+  (lambda (struct-inst) (struct->list struct-inst #:on-opaque 'return-false)))
+
+
+(provide print-cptr)
+(define print-cptr
+  (lambda (cptr)
+    (eval-handle `(display ,cptr))))
+
+
+(provide godot-new-instance)
+(define godot-new-instance
+  (lambda (module-path (name-space (current-namespace)))
+    (eval-handle
+      `(let
+        ([instancer (dynamic-require '',module-path 'godot-new-instance)])
+        (instancer))
+      name-space)))

@@ -102,6 +102,16 @@ int GDClassDefinition::set_prop(const String &p_name, const GDClassProperty &p_p
 }
 
 
+void GDClassDefinition::set_method(const String &p_name, const GDMethod &p_method) {
+    methods.insert(p_name, p_method);
+}
+
+
+bool GDClassDefinition::has_method(const String &p_name) const {
+    return methods.has(p_name);
+}
+
+
 bool GDClassDefinition::has_base_script() const {
     return base_script.is_valid();
 }
