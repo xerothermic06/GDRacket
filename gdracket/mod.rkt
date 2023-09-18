@@ -39,9 +39,9 @@
 (define eval-handle
   (lambda (sexpr (name-space (current-namespace)))
       (with-handlers ([void (lambda (exn)
-                      ; (displayln (continuation-mark-set->context (exn-continuation-marks exn)))
-                      ; (displayln (exn-message exn))
-                      ; (flush-output)
+                      (displayln (continuation-mark-set->context (exn-continuation-marks exn)))
+                      (displayln (exn-message exn))
+                      (flush-output)
                       (cons #f exn))])
           (cons #t (eval sexpr name-space)))))
 

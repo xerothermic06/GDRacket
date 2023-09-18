@@ -27,11 +27,6 @@ GDExtensionScriptInstancePtr SchemeScriptInstance::create_instance(const SchemeS
     GDExtensionScriptInstancePtr instPtr = godot::internal::gdextension_interface_script_instance_create(
         instance_info, inst);
 
-    // if (parent->classInfo.create_instance_func != nullptr) {
-    //     GDExtensionObjectPtr backingObject = parent->classInfo.create_instance_func(nullptr);
-    //     inst->owner_object = backingObject; //std::make_unique<GDExtensionObjectPtr>(backingObject);
-    // }
-
     return instPtr;
 }
 

@@ -190,16 +190,41 @@ Scheme_Object* _gdprimitive_get_singleton(int argc, Scheme_Object** argv) {
 }
 
 
+Scheme_Object* _gdprimitive_gdobjectp(int argc, Scheme_Object** argv) {
+    return (SCHEME_CPTRP(argv[0])) && (scheme_eq(SCHEME_CPTR_TYPE(argv[0]), rkt_sym("object")) == 1)
+        ? scheme_true
+        : scheme_false;
+}
+
+
+Scheme_Object* _gdprimitive_gd_object_call(int argc, Scheme_Object** argv) {
+    if (!SCHEME_CPTRP(argv[0])
+        || !(scheme_eq(SCHEME_CPTR_TYPE(argv[0]), rkt_sym("object")) == 1)
+        || !(SCHEME_SYMBOLP(argv[1]))) {
+        return scheme_void;
+    }
+    Object* obj = (Object*)SCHEME_CPTR_VAL(argv[0]);
+    Scheme_Object* method_symbol = rkt_sym(SCHEME_SYM_VAL(argv[1]));
+    Scheme_Object* method_name_str = rkt_eval(rkt_sym("symbol->string"), method_symbol);
+    StringName method_name = rktstr2gdstrname(method_name_str);
+    Array args;
+    for (int i = 0; i < argc - 2; i++) {
+        args.append(rkt_obj2gd_obj(argv[i]));
+    }
+    Variant result = obj->callv(method_name, args);
+    return gd_obj2rkt_obj(&result);
+}
+
+#define rkt_add_prim_module_proc(nm, fn, modul, minargs, maxargs, returns) \
+    scheme_add_global(nm, scheme_make_prim_w_everything(fn, 1, nm, minargs, maxargs, 0, returns, returns), modul)
+
+
 Scheme_Env* init_gdprimitive_module(Scheme_Env* env) {
     Scheme_Env* modul = scheme_primitive_module(rkt_sym("gd-primitive"), env);
-    scheme_add_global(
-        "push-error",
-        scheme_make_prim_w_everything(_gdprimitive_push_error, 1, "push-error", 1, 1, 0, 0, 0),
-        modul);
-    scheme_add_global(
-        "get-singleton",
-        scheme_make_prim_w_everything(_gdprimitive_push_error, 1, "get-singleton", 1, 1, 0, 1, 1),
-        modul);
+    rkt_add_prim_module_proc("push-error", _gdprimitive_push_error, modul, 1, 1, 0);
+    rkt_add_prim_module_proc("get-singleton", _gdprimitive_get_singleton, modul, 1, 1, 1);
+    rkt_add_prim_module_proc("object?", _gdprimitive_gdobjectp, modul, 1, 1, 1);
+    rkt_add_prim_module_proc("object-call", _gdprimitive_gd_object_call, modul, 2, 16, 1);
     scheme_finish_primitive_module(modul);
     return modul;
 }
@@ -208,6 +233,7 @@ Scheme_Env* init_gdprimitive_module(Scheme_Env* env) {
 // Environment setup ///////////////////////////////////////////////////////////
 
 void _env_setup_globals(Scheme_Env* env, Scheme_Object* collects_path_string_list) {
+    init_gdprimitive_module(env);
 
     declare_modules(env);
 
@@ -222,11 +248,6 @@ void _env_setup_globals(Scheme_Env* env, Scheme_Object* collects_path_string_lis
     scheme_namespace_require(rkt_sym("gdracket/godot"));
     // scheme_eval(rkt_list(rkt_sym("require"), rkt_sym("gdracket/godot")), env);
     // scheme_eval(rkt_list(rkt_sym("require"), rkt_sym("gdracket/mod")), env);
-
-    scheme_add_global("gd-type-variant", scheme_make_integer(Variant::VARIANT_MAX), env);
-    scheme_add_global("gd-type-float", scheme_make_integer(Variant::FLOAT), env);
-
-
 }
 
 Scheme_Object* _env_fork_namespace(const char* ns_name, Scheme_Env* parent_env) {
@@ -247,7 +268,6 @@ Scheme_Object* _env_fork_namespace(const char* ns_name, Scheme_Env* parent_env) 
                 ))
     ), parent_env);
 
-    _logln("namespace created");
     return dest_ns;
 }
 
@@ -258,102 +278,30 @@ RacketEnvironment::RacketEnvironment() {
     ready = false;
     setup_done = false;
 
-    // worker = new std::thread([this]() {
-        _setup_tls_space();
+    _setup_tls_space();
 
-        scheme_main_stack_setup(1, [](void* data) -> int {
+    scheme_main_stack_setup(1, [](void* data) -> int {
+        RacketEnvironment* setup_data = (RacketEnvironment*)data;
 
-            RacketEnvironment* setup_data = (RacketEnvironment*)data;
+        Scheme_Object* collects_paths = rkt_list(
+            gdstr2rktstr(SchemeLanguage::get_singleton()->get_install_dir()));
 
-            Scheme_Object* collects_paths = rkt_list(
-                gdstr2rktstr(SchemeLanguage::get_singleton()->get_install_dir()));
+        root_scheme_env = scheme_basic_env();
+        // // TODO: Create port that pipes racket output to godot's
+        root_env_output = scheme_make_file_output_port(stdout);
+        scheme_set_param(scheme_current_config(), MZCONFIG_OUTPUT_PORT, root_env_output);
+        _env_setup_globals(root_scheme_env, collects_paths);
 
-            // Wait for calling thread to catch up
-            // std::unique_lock<std::mutex> lk(*(setup_data->mutex));
-            // setup_data->sem->wait(lk, [setup_data]{ return setup_data->ready; });
+        Scheme_Env* env = root_scheme_env;
+        setup_data->set_env(env);
 
-            root_scheme_env = scheme_basic_env();
-            // // TODO: Create port that pipes racket output to godot's
-            root_env_output = scheme_make_file_output_port(stdout);
-            scheme_set_param(scheme_current_config(), MZCONFIG_OUTPUT_PORT, root_env_output);
-            _env_setup_globals(root_scheme_env, collects_paths);
-            // declare_modules(root_scheme_env);
-            Scheme_Env* env = root_scheme_env;
-            setup_data->set_env(env);
-
-            // setup_data->setup_done = true;
-            // lk.unlock();
-            // setup_data->sem->notify_one();
-
-            // Scheme_Object* curout = scheme_get_param(scheme_current_config(), MZCONFIG_OUTPUT_PORT);
-
-
-            // while (true) {
-            //     {
-            //         // std::unique_lock<std::mutex> lk(*(setup_data->mutex));
-            //         // setup_data->sem->wait(lk, [setup_data]{
-            //         //     return setup_data->request.state == RequestState::PENDING;
-            //         // });
-
-            //         Scheme_Object* res;
-            //         if (setup_data->request.request_type == RequestType::STRING) {
-            //             const char* eval_str = setup_data->request.string_request.c_str();
-            //             Scheme_Object* sexpr_string = scheme_make_utf8_string(eval_str);
-            //             scheme_eval(sexpr_list(rkt_sym("display"), sexpr_string), setup_data->request.ns);
-            //             // TODO: Exception handling on read
-            //             res = scheme_eval(sexpr_list(rkt_sym("eval-source"), sexpr_string), setup_data->request.ns);
-            //             scheme_eval(sexpr_list(rkt_sym("display"), sexpr_list(rkt_sym("quote"), res)), setup_data->request.ns);
-            //         } else if (setup_data->request.request_type == RequestType::SEXPR) {
-            //             res = scheme_eval_multi(setup_data->request.sexpr_request, setup_data->request.ns);
-            //         } else if (setup_data->request.request_type == RequestType::FUNCTION) {
-            //             res = setup_data->request.func_request(setup_data->request.sexpr_request, setup_data->request.ns);
-            //         }
-
-            //         scheme_flush_output(curout);
-            //         setup_data->request.result = res;
-            //         setup_data->request.state = RequestState::COMPLETE;
-            //         // lk.unlock();
-            //         // setup_data->sem->notify_one();
-            //     }
-
-            // }
-            return 0;
-        }, (void*)this);
-    // });
-
-    // Allow thread to initialize Racket and wait for it to enter busy-wait loop
-    // {
-    //     std::lock_guard<std::mutex> lk(*mutex);
-    //     // _logln("Thread notified setting ready");
-    //     ready = true;
-    // }
-    // sem->notify_one();
-    // // _logln("Thread notified, waiting");
-    // {
-    //     std::unique_lock<std::mutex> lk(*mutex);
-    //     sem->wait(lk, [this]{ return setup_done; });
-    // }
-
+        return 0;
+    }, (void*)this);
 }
 
 
 Scheme_Object* RacketEnvironment::eval_in(Scheme_Object* eval_list, Scheme_Env* ns) {
     request.result = scheme_eval(eval_list, ns);
-    // {
-    //     std::lock_guard<std::mutex> lk(*mutex);
-    //     request.state = RequestState::PENDING;
-    //     request.ns = ns;
-    //     request.request_type = RequestType::SEXPR;
-    //     request.sexpr_request = eval_list;
-    // }
-    // // _logln("Sending request to thread");
-    // sem->notify_one();
-    // {
-    //     std::unique_lock<std::mutex> lk(*mutex);
-    //     sem->wait(lk, [this]{
-    //         return request.state == RequestState::COMPLETE;
-    //     });
-    // }
     return request.result;
 }
 
@@ -365,20 +313,6 @@ Scheme_Object* RacketEnvironment::eval(Scheme_Object* eval_list) {
 
 Scheme_Object* RacketEnvironment::eval_string_in(std::string eval_str, Scheme_Env* ns) {
     request.result = scheme_eval_string(eval_str.c_str(), ns);
-    // {
-    //     std::lock_guard<std::mutex> lk(*mutex);
-    //     request.state = RequestState::PENDING;
-    //     request.request_type = RequestType::STRING;
-    //     request.ns = ns;
-    //     request.string_request = eval_str;
-    // }
-    // sem->notify_one();
-    // {
-    //     std::unique_lock<std::mutex> lk(*mutex);
-    //     sem->wait(lk, [this]{
-    //         return request.state == RequestState::COMPLETE;
-    //     });
-    // }
     return request.result;
 }
 
@@ -389,21 +323,6 @@ Scheme_Object* RacketEnvironment::eval_string(std::string eval_str) {
 
 
 Scheme_Object* RacketEnvironment::eval_func_in(RacketMapper* mapper_func, Scheme_Object* args, Scheme_Env* ns) {
-    // {
-    //     std::lock_guard<std::mutex> lk(*mutex);
-    //     request.state = RequestState::PENDING;
-    //     request.request_type = RequestType::FUNCTION;
-    //     request.ns = ns;
-    //     request.func_request = mapper_func;
-    //     request.sexpr_request = args;
-    // }
-    // sem->notify_one();
-    // {
-    //     std::unique_lock<std::mutex> lk(*mutex);
-    //     sem->wait(lk, [this]{
-    //         return request.state == RequestState::COMPLETE;
-    //     });
-    // }
     return request.result;
 }
 
@@ -437,16 +356,7 @@ GDClassDefinition RacketBinder::scheme_create_definition(const SchemeScript &scr
         root_scheme_env);
     Scheme_Object* ok = SCHEME_CAR(result);
     if (SCHEME_FALSEP(ok)) {
-        // _logln("exception creating class definition");
-        rkt_eval(rkt_sym("displayln"), SCHEME_CDR(result));
-        rkt_eval(rkt_sym("flush-output"));
-        Scheme_Object* exn_message = rkt_eval(
-            rkt_sym("format"),
-            scheme_make_utf8_string("Exception thrown during class definition: ~a"),
-            rkt_list(
-                rkt_sym("exn-message"),
-                SCHEME_CDR(result)));
-        UtilityFunctions::push_error(rktstr2gdstr(exn_message));
+        rkt_eval(rkt_sym("push-exn"), SCHEME_CDR(result));
         return gdcd;
     }
     result = SCHEME_CADR(result);
@@ -461,20 +371,6 @@ GDClassDefinition RacketBinder::scheme_create_definition(const SchemeScript &scr
     script_id_definition_map.insert(script.get_instance_id(), gdcd);
     return gdcd;
 }
-
-
-// void _push_racket_error(Scheme_Object* exn) {
-//     if (SCHEME_TRUEP(rkt_eval(rkt_sym("exn?"), exn))) {
-//         // TODO: get stack trace
-//         Scheme_Object* err_string = rkt_eval(
-//             rkt_sym("format"),
-//             scheme_make_utf8_string("")
-//             rkt_sym("exn-message"),
-//             exn
-//         );
-//         UtilityFunctions::push_error();
-//     }
-// }
 
 
 void RacketBinder::scheme_initialize_instance(SchemeScriptInstance &p_target) {
@@ -524,49 +420,6 @@ Variant RacketBinder::scheme_call(SchemeScriptInstance &p_target, const String p
         Scheme_Object** objs = (Scheme_Object**)malloc(sizeof(Scheme_Object*) * p_argcount);
         for (int i = 0; i < p_argcount; i++) {
             const Variant* arg_i = p_args[i];
-            // float flval = (float)(*arg_i);
-            // printf("%f\n", flval);
-            // switch (arg_i->get_type()) {
-            //     case Variant::Type::NIL: printf("type: NIL\n"); break;
-            //     case Variant::Type::BOOL: printf("type: BOOL\n"); break;
-            //     case Variant::Type::INT: printf("type: INT\n"); break;
-            //     case Variant::Type::FLOAT: printf("type: FLOAT\n"); break;
-            //     case Variant::Type::STRING: printf("type: STRING\n"); break;
-            //     case Variant::Type::VECTOR2: printf("type: VECTOR2\n"); break;
-            //     case Variant::Type::VECTOR2I: printf("type: VECTOR2I\n"); break;
-            //     case Variant::Type::RECT2: printf("type: RECT2\n"); break;
-            //     case Variant::Type::RECT2I: printf("type: RECT2I\n"); break;
-            //     case Variant::Type::VECTOR3: printf("type: VECTOR3\n"); break;
-            //     case Variant::Type::VECTOR3I: printf("type: VECTOR3I\n"); break;
-            //     case Variant::Type::TRANSFORM2D: printf("type: TRANSFORM2D\n"); break;
-            //     case Variant::Type::VECTOR4: printf("type: VECTOR4\n"); break;
-            //     case Variant::Type::VECTOR4I: printf("type: VECTOR4I\n"); break;
-            //     case Variant::Type::PLANE: printf("type: PLANE\n"); break;
-            //     case Variant::Type::QUATERNION: printf("type: QUATERNION\n"); break;
-            //     case Variant::Type::AABB: printf("type: AABB\n"); break;
-            //     case Variant::Type::BASIS: printf("type: BASIS\n"); break;
-            //     case Variant::Type::TRANSFORM3D: printf("type: TRANSFORM3D\n"); break;
-            //     case Variant::Type::PROJECTION: printf("type: PROJECTION\n"); break;
-            //     case Variant::Type::COLOR: printf("type: COLOR\n"); break;
-            //     case Variant::Type::STRING_NAME: printf("type: STRING_NAME\n"); break;
-            //     case Variant::Type::NODE_PATH: printf("type: NODE_PATH\n"); break;
-            //     case Variant::Type::RID: printf("type: RID\n"); break;
-            //     case Variant::Type::OBJECT: printf("type: OBJECT\n"); break;
-            //     case Variant::Type::CALLABLE: printf("type: CALLABLE\n"); break;
-            //     case Variant::Type::SIGNAL: printf("type: SIGNAL\n"); break;
-            //     case Variant::Type::DICTIONARY: printf("type: DICTIONARY\n"); break;
-            //     case Variant::Type::ARRAY: printf("type: ARRAY\n"); break;
-            //     case Variant::Type::PACKED_BYTE_ARRAY: printf("type: PACKED_BYTE_ARRAY\n"); break;
-            //     case Variant::Type::PACKED_INT32_ARRAY: printf("type: PACKED_INT32_ARRAY\n"); break;
-            //     case Variant::Type::PACKED_INT64_ARRAY: printf("type: PACKED_INT64_ARRAY\n"); break;
-            //     case Variant::Type::PACKED_FLOAT32_ARRAY: printf("type: PACKED_FLOAT32_ARRAY\n"); break;
-            //     case Variant::Type::PACKED_FLOAT64_ARRAY: printf("type: PACKED_FLOAT64_ARRAY\n"); break;
-            //     case Variant::Type::PACKED_STRING_ARRAY: printf("type: PACKED_STRING_ARRAY\n"); break;
-            //     case Variant::Type::PACKED_VECTOR2_ARRAY: printf("type: PACKED_VECTOR2_ARRAY\n"); break;
-            //     case Variant::Type::PACKED_VECTOR3_ARRAY: printf("type: PACKED_VECTOR3_ARRAY\n"); break;
-            //     case Variant::Type::PACKED_COLOR_ARRAY: printf("type: PACKED_COLOR_ARRAY\n"); break;
-            //     case Variant::Type::VARIANT_MAX: printf("type: VARIANT_MAX\n"); break;
-            // }
             objs[i] = gd_obj2rkt_obj(arg_i);
         }
         args_list = scheme_build_list(p_argcount, objs);
@@ -580,12 +433,8 @@ Variant RacketBinder::scheme_call(SchemeScriptInstance &p_target, const String p
         rkt_quote(method_name_sym),
         rkt_quote(args_list));
 
-    // rkt_eval(rkt_sym("displayln"), rkt_quote(out));
-    // rkt_eval(rkt_sym("flush-output"));
-
     if (SCHEME_FALSEP(SCHEME_CAR(out))) {
-        Scheme_Object* err_msg = rkt_eval(rkt_sym("exn->string"), SCHEME_CDR(out));
-        UtilityFunctions::push_error(rktstr2gdstr(err_msg));
+        rkt_eval(rkt_sym("push-exn"), SCHEME_CDR(out));
         return Variant();
     }
     Scheme_Object* cadr = SCHEME_CDR(out);
