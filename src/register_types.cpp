@@ -1,42 +1,3 @@
-// #include "register_types.h"
-
-// #include "gdexample.h"
-
-// #include <gdextension_interface.h>
-// #include <godot_cpp/core/defs.hpp>
-// #include <godot_cpp/core/class_db.hpp>
-// #include <godot_cpp/godot.hpp>
-
-// using namespace godot;
-
-// void initialize_example_module(ModuleInitializationLevel p_level) {
-//     if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
-//         return;
-//     }
-
-//     ClassDB::register_class<GDExample>();
-// }
-
-// void uninitialize_example_module(ModuleInitializationLevel p_level) {
-//     if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
-//         return;
-//     }
-// }
-
-// extern "C" {
-// // Initialization.
-// GDExtensionBool GDE_EXPORT example_library_init(GDExtensionInterfaceGetProcAddress p_get_proc_address, const GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization) {
-//     godot::GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
-
-//     init_obj.register_initializer(initialize_example_module);
-//     init_obj.register_terminator(uninitialize_example_module);
-//     init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SCENE);
-
-//     return init_obj.init();
-// }
-// }
-
-
 #include "register_types.h"
 
 #include <godot_cpp/core/class_db.hpp>
@@ -50,8 +11,6 @@
 #include "scheme_script.h"
 #include "binder/racket_binder.h"
 
-// #include "test_language.h"
-
 #include <cstdio>
 
 using namespace godot;
@@ -62,17 +21,11 @@ Ref<SchemeScriptResourceLoader> loader;
 Ref<SchemeScriptResourceSaver> saver;
 
 SchemeLanguage* language = nullptr;
-SchemeBinder* binder;
-
 
 void initialize_scheme_module(ModuleInitializationLevel p_level) {
     if (p_level != INIT_LEVEL) {
         return;
     }
-    // ClassDB::register_class<GDExample>();
-    // ClassDB::register_class<TestLanguage>();
-    // testlang = memnew(TestLanguage());
-    // CRASH_COND_MSG(Engine::get_singleton()->register_script_language(testlang) != OK, "language register failed");
 
     ClassDB::register_class<SchemeLanguage>();
     ClassDB::register_class<SchemeScript>();
@@ -81,11 +34,6 @@ void initialize_scheme_module(ModuleInitializationLevel p_level) {
 
     language = memnew(SchemeLanguage());
     CRASH_COND_MSG(Engine::get_singleton()->register_script_language(language) != OK, "scheme: language register failed");
-
-    // TODO: selectable binder if needed
-    // binder = memnew(ChibiSchemeBinder());
-    binder = memnew(RacketBinder());
-    language->set_binder(binder);
 
     loader.instantiate();
     loader->language = language;
@@ -105,15 +53,8 @@ void uninitialize_scheme_module(ModuleInitializationLevel p_level) {
 
     loader.unref();
     saver.unref();
+    delete language;
 
-    // can't unregister this and can never deallocate because of thread exit handlers
-// #if 0
-// 	if (language != nullptr)
-// 	{
-// 		memdelete(language);
-// 		language = nullptr;
-// 	}
-// #endif
 }
 
 extern "C" {

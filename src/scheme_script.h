@@ -24,13 +24,11 @@ class SchemeScript : public ScriptExtension {
     Ref<Mutex> instance_lock;
 	String source_code;
 	GDClassDefinition class_definition;
-	HashMap<uint64_t, SchemeScriptInstance *> instances;
+	HashMap<uint64_t, SchemeScriptInstance*> instances;
+	bool is_valid = false;
 
 protected:
-	static void _bind_methods() {
-		// no code
-		// ClassDB::bind_method(D_METHOD("_get_language"), &SchemeScript::_get_language);
-	}
+	static void _bind_methods() { }
 
 public:
 	SchemeScript();
@@ -73,10 +71,8 @@ public:
 	void* _instance_create(Object* for_object) const override;
 
 	bool _editor_can_reload_from_file() override;
-	// void _placeholder_erased(void *placeholder) override;
 	StringName _get_global_name() const override;
 	bool _inherits_script(const Ref<Script> &script) const override;
-	// void *_placeholder_instance_create(Object *for_object) const override;
 	bool _instance_has(Object *object) const override;
 
 	Error _reload(bool keep_state) override;
@@ -87,6 +83,21 @@ public:
 };
 
 
+// SchemeModule ////////////////////////////////////////////////////////////////
+class SchemeModule : public Resource {
+	GDCLASS(SchemeModule, Resource)
+
+	String source_code;
+
+protected:
+	static void _bind_methods() {}
+
+public:
+	String get_source_code() { return source_code; }
+	// TODO: track exports or other symbols for editor integration?
+
+};
+
 
 // ResourceLoader //////////////////////////////////////////////////////////////
 
@@ -95,11 +106,13 @@ class SchemeScriptResourceLoader : public ResourceFormatLoader {
 
 	friend void initialize_scheme_module(ModuleInitializationLevel p_level);
 	SchemeLanguage* language = nullptr;
+	// Ref<SchemeLanguage> language;
+
+	Variant _load_script(const String &path) const;
+	Variant _load_module(const String &path) const;
 
 protected:
-	static void _bind_methods() {
-		// no code
-	}
+	static void _bind_methods() { }
 
 public:
 	SchemeScriptResourceLoader();
@@ -112,13 +125,8 @@ public:
 
 	bool _recognize_path(const String &path, const StringName &type) const;
 	String _get_resource_script_class(const String &path) const;
-	// int64_t _get_resource_uid(const String &path) const;
-	// Error _rename_dependencies(const String &path, const Dictionary &renames) const;
-	// bool _exists(const String &path) const;
-	// PackedStringArray _get_classes_used(const String &path) const;
 
 };
-
 
 
 // ResourceSaver ///////////////////////////////////////////////////////////////
@@ -127,9 +135,7 @@ class SchemeScriptResourceSaver : public ResourceFormatSaver {
 	GDCLASS(SchemeScriptResourceSaver, ResourceFormatSaver)
 
 protected:
-	static void _bind_methods() {
-		// no code
-	}
+	static void _bind_methods() { }
 
 public:
 	SchemeScriptResourceSaver();

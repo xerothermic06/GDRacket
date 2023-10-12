@@ -18,6 +18,7 @@ SCHEME_ENGINE = "chibi-scheme"
 env.Append(CPPPATH=["src/", "src/binder", "src/util"])
 sources = Glob("src/*.cpp") + Glob("src/**/*.cpp")
 # sources = Glob("src/*.cpp", "src/**/*.cpp")
+env.Append(CCFLAGS=["/utf-8"])
 
 env.Append(CPPDBFLAGS=["/Zi", "/Fd${TARGET}.pdb"])
 env.Append(CCFLAGS=["/Z7"])

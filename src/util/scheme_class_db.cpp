@@ -1,15 +1,9 @@
-
-// #include <godot_cpp/classes/engine.hpp>
-// #include <godot_cpp/classes/file_access.hpp>
-// #include <godot_cpp/classes/ref.hpp>
-// #include <godot_cpp/godot.hpp>
-// #include <godot_cpp/variant/array.hpp>
-// #include <godot_cpp/variant/string.hpp>
-// #include <godot_cpp/variant/string_name.hpp>
 #include <godot_cpp/godot.hpp>
 #include <godot_cpp/classes/engine.hpp>
 
 #include "scheme_class_db.h"
+
+// Compensates for ClassDB methods not exposed to GDExtension. May be a better way of doing this
 
 Object* SchemeClassDB::class_db;
 

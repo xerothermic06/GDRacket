@@ -1,8 +1,9 @@
 #lang racket
-
+; TODO: contracts for procs
 (require
   racket/base
   racket/exn
+  (prefix-in ffi: ffi/unsafe)
   (prefix-in gdp: 'gd-primitive))
 
 
@@ -10,29 +11,22 @@
   (let* ([stx-list (syntax->list stx)]
          [sym (cadr stx-list)]
          [expr (caddr stx-list)])
-  (datum->syntax stx `(begin (define ,sym ,expr) (provide (prefix-out gd: ,sym))))))
+  (datum->syntax stx `(begin (define ,sym ,expr) (provide ,sym)))))
 
 
 (define-syntax def-gd
   (syntax-rules()
-    [(provide-gd id expr) (begin (define id expr) (provide (prefix-out gd: id)))]
-    [(provide-gd (struct id rest ...)) (begin (provide (prefix-out gd: (struct-out id))) (struct id rest ...)) ]))
+    [(provide-gd id expr) (begin (define id expr) (provide id))]
+    [(provide-gd (struct id rest ...)) (begin (provide (struct-out id)) (struct id rest ...)) ]))
 
 
 (define-syntax-rule (values->list EXPR)
   (call-with-values (λ () EXPR) list))
 
 
-; (provide (struct-out gd-prop))
-(def-gd (struct prop (name type) #:transparent #:reflection-name 'gd:prop))
-
-
-; (provide (struct-out method))
-(def-gd (struct method (name return-type arguments) #:transparent #:reflection-name 'gd:method))
-
-
-; (provide (struct-out class))
-(def-gd (struct class (name methods properties) #:transparent #:reflection-name 'gd:class))
+(def-gd (struct prop (name type) #:mutable #:transparent #:reflection-name 'prop))
+(def-gd (struct method (name return-type arguments) #:mutable #:transparent #:reflection-name 'method))
+(def-gd (struct class (name methods properties) #:mutable #:transparent #:reflection-name 'class))
 
 
 (def-gd print
@@ -47,9 +41,60 @@
   (λ (exn (message "")) (gdp:push-error (string-append message (exn->string exn)))))
 
 
-(def-gd gd-invoke
+(def-gd invoke
   (lambda (obj method-name arg-list)
       (apply dynamic-send obj method-name arg-list)))
+
+
+; (def-gd object?
+;   (lambda (obj)
+;     ; (displayln "get object")
+;     (and
+;       (ffi:cpointer? obj)
+;       (ffi:cpointer-has-tag? obj 'object))))
+
+
+; (def-gd variant?
+;   (lambda (obj)
+;   ; (displayln "get variant")
+;     (and
+;       (ffi:cpointer? obj)
+;       (ffi:cpointer-has-tag? obj 'variant))))
+
+
+(define setget-target/c (or/c gdp:object? object?))
+(define setget-index/c (or/c symbol? integer?))
+; (define get-return/c (or/c variant? null?))
+
+
+(provide (contract-out
+  [get (-> setget-target/c setget-index/c any)]))
+(define get
+  (lambda (obj-or-vnt nm)
+    (displayln (format "get: ~a ~a ~a" obj-or-vnt (gdp:object? obj-or-vnt) nm))
+    (flush-output)
+    (cond [(gdp:object? obj-or-vnt)
+      (if (integer? nm)
+        (gdp:geti obj-or-vnt nm)
+        (gdp:call obj-or-vnt "get" (symbol->string nm)))])))
+      ; [(variant? obj-or-vnt)
+          ; (gdp:call obj-or-vnt "get" (symbol->string nm)))])))
+
+
+(provide (contract-out
+  [set (-> setget-target/c setget-index/c any/c boolean?)]))
+(define set
+  (lambda (obj-or-vnt nm valu)
+    (displayln (format "get: ~a ~a ~a" obj-or-vnt (gdp:object? obj-or-vnt) nm))
+    (flush-output)
+    (cond
+      ; [(object? obj-or-vnt)
+      ;   (gdp:object-call obj-or-vnt "set" (symbol->string nm) valu)]
+      [(gdp:object? obj-or-vnt)
+        (if (integer? nm)
+          (gdp:seti! obj-or-vnt nm valu)
+          (gdp:call obj-or-vnt "set" (symbol->string nm) valu))])
+      #f))
 
 
 (def-gd Input
@@ -96,3 +141,4 @@
 (def-gd type:packed-vector3-array 36)
 (def-gd type:packed-color-array 37)
 (def-gd type:variant-max 38)
+

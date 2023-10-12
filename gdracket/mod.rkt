@@ -57,6 +57,7 @@
       (let ([exprs-vec         (read-multi (open-input-string source-str))]
             [break-cond        (lambda (result-vec) (not (car result-vec)))]
             [eval-handle-in-ns (lambda (sexpr) (eval-handle sexpr name-space))])
+;        (displayln exprs-vec)
         (vector-map-break exprs-vec eval-handle-in-ns break-cond)))))
 
 
@@ -64,13 +65,20 @@
 (provide register-gd-class)
 (define register-gd-class
   (lambda (source-str module-name name-space)
-    (let
-      ([fn (lambda ()
+    ; (let
+      ; ([fn (lambda ()
         (eval-source source-str module-name name-space)
-        (let ([gd-info (dynamic-require `',module-name 'godot-class-info)])
-          gd-info)
-        )])
-    (eval-handle `(,fn) name-space))))
+        (dynamic-require `',module-name 'CLASS_INFO)))
+        ; [res (with-handlers ([void (lambda (exn) (cons #f exn))])
+          ; (fn))])
+    ; )
+
+
+(provide new-gd-class-instance)
+(define new-gd-class-instance
+  (λ (module-name-sym name-space)
+    ; (eval-handle `(new (dynamic-require `',module-name-sym 'CLASS)))))
+    (new (dynamic-require `',module-name-sym 'CLASS))))
 
 
 (provide attach-modules)

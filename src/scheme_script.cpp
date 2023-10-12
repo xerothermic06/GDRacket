@@ -1,13 +1,8 @@
-// #include <fstream>
 #include "godot_cpp/classes/file_access.hpp"
 
-
 #include "scheme_language.h"
-// #include "scheme_script_instance.h"
 #include "scheme_script.h"
 
-// #include <godot_cpp/classes/script_language_thread_context_extension.hpp>
-// #include <godot_cpp/classes/file.hpp>
 
 SchemeScript::SchemeScript() {
     language = SchemeLanguage::get_singleton();
@@ -19,13 +14,16 @@ SchemeScript::~SchemeScript() {
 
 
 Error SchemeScript::load() {
-    class_definition = language->binder->scheme_create_definition(*this);
-    return Error::OK;
+    GDClassDefinition def;
+    Error err = language->binder->create_definition(*this, def);
+    is_valid = err == Error::OK;
+    return err;
+    // return Error::OK;
 }
 
 
 bool SchemeScript::_can_instantiate() const {
-    return true;
+    return is_valid;
 }
 
 
@@ -45,7 +43,7 @@ bool SchemeScript::_is_tool() const {
 
 
 bool SchemeScript::_is_valid() const {
-    return true;
+    return is_valid;
 }
 
 
@@ -104,7 +102,6 @@ TypedArray<StringName> SchemeScript::_get_members() const {
         members.push_back(prop.property.name);
 
     return members;
-    // return Array();
 }
 
 
@@ -119,7 +116,6 @@ Ref<Script> SchemeScript::_get_base_script() const {
 
 
 StringName SchemeScript::_get_instance_base_type() const {
-    // return StringName("Object");
     StringName extends = StringName(class_definition.extends);
 
     if (extends != StringName() && SchemeClassDB::class_exists(extends)) {
@@ -127,7 +123,6 @@ StringName SchemeScript::_get_instance_base_type() const {
     }
 
     auto base_script = class_definition.base_script;
-    // if (base_script != nullptr && base_script->_is_valid())
     if (class_definition.has_base_script()) {
         return base_script->get_instance_base_type();
     }
@@ -136,7 +131,7 @@ StringName SchemeScript::_get_instance_base_type() const {
 
 
 String SchemeScript::_get_source_code() const {
-    return source_code; //String("This language does not use source code");
+    return source_code;
 }
 
 
@@ -146,7 +141,7 @@ void SchemeScript::_set_source_code(const String& code) {
 
 
 void SchemeScript::_update_exports() {
-    // nothing to do
+    // TODO: Figure out what this is supposed to do
 }
 
 
@@ -168,11 +163,6 @@ bool SchemeScript::_has_property_default_value(const StringName&) const {
 bool SchemeScript::_editor_can_reload_from_file() {
     return true;
 }
-
-
-// void SchemeScript::_placeholder_erased(void *placeholder) {
-
-// }
 
 
 StringName SchemeScript::_get_global_name() const {
@@ -198,13 +188,7 @@ bool SchemeScript::_inherits_script(const Ref<Script> &p_script) const {
 }
 
 
-// void* SchemeScript::_placeholder_instance_create(Object *for_object) const {
-//     return nullptr;
-// }
-
-
 bool SchemeScript::_instance_has(Object *object) const {
-    // auto lock(*SchemeLanguage::singleton->instance_lock.ptr());
     SchemeLanguage::get_singleton()->get_instance_lock();
     return instances.has(object->get_instance_id());
 }
@@ -240,7 +224,6 @@ Variant SchemeScript::_get_property_default_value(const StringName &property) co
 
 
 int32_t SchemeScript::_get_member_line(const StringName &member) const {
-    // language->binder->
     return 0;
 }
 
@@ -255,7 +238,6 @@ Variant SchemeScript::_get_rpc_config() const {
 }
 
 
-
 // ResourceLoader //////////////////////////////////////////////////////////////
 
 SchemeScriptResourceLoader::SchemeScriptResourceLoader() {}
@@ -264,29 +246,44 @@ SchemeScriptResourceLoader::SchemeScriptResourceLoader() {}
 SchemeScriptResourceLoader::~SchemeScriptResourceLoader() {}
 
 
-Variant SchemeScriptResourceLoader::_load(const String &path, const String &original_path, bool use_sub_threads, int32_t cache_mode) const {
-        // Ref<SchemeScript> script = resource;
-	// ERR_FAIL_COND_V(script.is_null(), nullptr);
+Variant SchemeScriptResourceLoader::_load_module(const String &path) const {
+    Ref<SchemeModule> modul;
+    modul.instantiate();
+    Error err;
+    Ref<FileAccess> file = FileAccess::open(path, FileAccess::READ);
+    ERR_FAIL_COND_V_MSG(file.is_null(), FileAccess::get_open_error(), "Cannot open file '" + path + "'.");
+    modul->source_code = file->get_as_text();
+    if (file->get_error() != OK && file->get_error() != ERR_FILE_EOF) {
+        return ERR_CANT_CREATE;
+    }
+    modul->set_path(path);
+    return modul;
+}
 
-	// String source = script->get_source_code();
-
-    Ref<SchemeScript> script;// = language->module_create_script();
+Variant SchemeScriptResourceLoader::_load_script(const String &path) const {
+    Ref<SchemeScript> script;
     script.instantiate();
 
-	Error err;
-	Ref<FileAccess> file = FileAccess::open(path, FileAccess::READ);
-	ERR_FAIL_COND_V_MSG(file.is_null(), FileAccess::get_open_error(), "Cannot open file '" + path + "'.");
-	script->source_code = file->get_as_text();
-	if (file->get_error() != OK && file->get_error() != ERR_FILE_EOF) {
-		return ERR_CANT_CREATE;
-	}
-    // const SchemeScript scr = *script.ptr();
-
+    Error err;
+    Ref<FileAccess> file = FileAccess::open(path, FileAccess::READ);
+    ERR_FAIL_COND_V_MSG(file.is_null(), FileAccess::get_open_error(), "Cannot open file '" + path + "'.");
+    script->source_code = file->get_as_text();
+    if (file->get_error() != OK && file->get_error() != ERR_FILE_EOF) {
+        return ERR_CANT_CREATE;
+    }
+    script->set_path(path);
     script->load();
-    // script->class_definition = language->binder.scheme_create_definition(scr);
     SchemeLanguage::get_singleton()->scripts.insert(path, script);
 
     return script;
+}
+
+Variant SchemeScriptResourceLoader::_load(const String &path, const String &original_path, bool use_sub_threads, int32_t cache_mode) const {
+    if (path.ends_with(".gd.rkt")) {
+        return _load_script(path);
+    }
+    return _load_module(path);
+
 }
 
 
@@ -299,19 +296,18 @@ PackedStringArray SchemeScriptResourceLoader::_get_recognized_extensions() const
 
 
 bool SchemeScriptResourceLoader::_handles_type(const StringName& p_type) const {
-    return (p_type == SchemeLanguage::s_get_type());
+    return (p_type == SchemeLanguage::s_get_type() || p_type == StringName("SchemeModule"));
 }
 
 String SchemeScriptResourceLoader::_get_resource_type(const String& p_path) const {
-    // String el = p_path.get_extension().to_lower();
-    // if (el == SchemeLanguage::module_get_extension_constant()) {
-    //     return SchemeLanguage::module_get_type_constant();
-    // }
-    // return "";
-    return SchemeLanguage::s_get_type();
+    if (p_path.ends_with(".gd.rkt")) {
+        return SchemeLanguage::s_get_type();
+    }
+    return "SchemeModule";
 }
 
 PackedStringArray SchemeScriptResourceLoader::_get_dependencies(const String& path, bool add_types) const {
+    // TODO: link script deps to modules?
     return PackedStringArray();
 }
 
@@ -321,30 +317,11 @@ bool SchemeScriptResourceLoader::_recognize_path(const String &path, const Strin
 
 
 String SchemeScriptResourceLoader::_get_resource_script_class(const String &path) const {
-    return SchemeLanguage::s_get_type();
+    if (path.ends_with(".gd.rkt")) {
+        return SchemeLanguage::s_get_type();
+    }
+    return "SchemeModule";
 }
-
-
-// int64_t SchemeScriptResourceLoader::_get_resource_uid(const String &path) const {
-//     return ResourceLoader::get_resource_uid(path);
-// }
-
-
-// Error SchemeScriptResourceLoader::_rename_dependencies(const String &path, const Dictionary &renames) const {
-
-// }
-
-
-// bool SchemeScriptResourceLoader::_exists(const String &path) const {
-
-// }
-
-
-// PackedStringArray SchemeScriptResourceLoader::_get_classes_used(const String &path) const {
-
-// }
-
-
 
 
 // ResourceSaver ///////////////////////////////////////////////////////////////
@@ -356,17 +333,16 @@ SchemeScriptResourceSaver::~SchemeScriptResourceSaver() {}
 
 
 Error SchemeScriptResourceSaver::_save(const Ref<Resource> &resource, const String &path, uint32_t flags) {
-    // Ref<FileAccess> out;
-    // out.instantiate();
-    // // will trigger https://github.com/godotengine/godot/issues/64455
-    // out->open(path, FileAccess::ModeFlags::WRITE);
-    // out->store_string("dummy");
-    // out->close();TypedArray<Dictionary>
-    // return OK;
-    Ref<SchemeScript> script = resource;
-	ERR_FAIL_COND_V(script.is_null(), ERR_INVALID_PARAMETER);
+    String source;
+    if (path.ends_with(".gd.rkt")) {
+        Ref<SchemeScript> script = resource;
+        ERR_FAIL_COND_V(script.is_null(), ERR_INVALID_PARAMETER);
+        source = script->get_source_code();
+    } else {
+        Ref<SchemeModule> modul = resource;
+        source = modul->get_source_code();
+    }
 
-	String source = script->get_source_code();
 
 	Error err;
 	Ref<FileAccess> file = FileAccess::open(path, FileAccess::WRITE);
@@ -375,19 +351,12 @@ Error SchemeScriptResourceSaver::_save(const Ref<Resource> &resource, const Stri
 	if (file->get_error() != OK && file->get_error() != ERR_FILE_EOF) {
 		return ERR_CANT_CREATE;
 	}
-    UtilityFunctions::print("Saved scheme script");
-
-    // script->reload();
-	// if (ScriptServer::is_reload_scripts_on_save_enabled()) {
-	// 	script->reload();
-	// }
 
 	return OK;
 }
 
 
 bool SchemeScriptResourceSaver::_recognize(const Ref<Resource>& p_resource) const {
-    // REVISIT: expanded for Natvis development
     const String resource_class = p_resource->get_class();
     const String our_class = SchemeScript::get_class_static();
     return (resource_class == our_class);

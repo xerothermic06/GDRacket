@@ -13,3 +13,5 @@ bin/
 
 # temp files
 *~
+
+*.gen.cpp

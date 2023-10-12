@@ -1,6 +1,6 @@
 [submodule "godot-cpp"]
 	path = godot-cpp
-	url = https://github.com/godotengine/godot-cpp.git
+	url = ./godot-cpp
 	branch = godot-4.1.1-stable
 [submodule "chibi"]
 	path = scheme/chibi-scheme

@@ -2,7 +2,6 @@
 
 #include "godot_cpp/variant/string.hpp"
 
-// class String;
 
 // copy-paste of godot::Callable::CallError
 class SchemeCallError {

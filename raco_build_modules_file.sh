@@ -10,4 +10,6 @@ $raco ctool --c-mods "$dest" \
     ++lib racket/class \
     ++lib racket/vector \
     ++lib racket/lang/reader \
-    ++lib racket/runtime-config
+    ++lib racket/runtime-config \
+    ++lib syntax/parse \
+    ++lib ffi/unsafe

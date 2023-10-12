@@ -21,6 +21,7 @@ class SchemeLanguage : public ScriptLanguageExtension {
     GDCLASS(SchemeLanguage, ScriptLanguageExtension)
 
     friend class SchemeScript;
+    friend class SchemeScriptResourceLoader;
 
     static SchemeLanguage* singleton;
 
@@ -46,10 +47,6 @@ public:
         return ml;
     }
 
-    void set_binder(SchemeBinder* b) {
-        binder = b;
-        binder->initialize();
-    }
 
     SchemeBinder* get_binder() {
         return binder;

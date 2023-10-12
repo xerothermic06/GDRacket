@@ -9,11 +9,9 @@
 // ReSharper disable CppClangTidyMiscMisplacedConst
 // ReSharper disable CppMemberFunctionMayBeConst
 
-// Interface between plugin and GDExtension's native scripting interface.
 
 GDExtensionScriptInstancePtr SchemeScriptInstance::create_instance(const SchemeScript* parent,
                                                                      godot::Object* host_object) {
-
     auto parent_ref = Ref<SchemeScript>(parent);
     auto inst = memnew(SchemeScriptInstance(parent_ref, host_object));
 
@@ -33,8 +31,7 @@ GDExtensionScriptInstancePtr SchemeScriptInstance::create_instance(const SchemeS
 
 SchemeScriptInstance::SchemeScriptInstance(Ref<SchemeScript> script, godot::Object* owner_object):
     script(script), owner_object(owner_object) {
-    SchemeLanguage::get_singleton()->binder->scheme_initialize_instance(*this);
-
+    SchemeLanguage::get_singleton()->get_binder()->initialize_instance(*this);
 }
 
 
@@ -44,12 +41,12 @@ SchemeScriptInstance::~SchemeScriptInstance() {
         uint64_t object_id = owner_object->get_instance_id();
         auto lock = script->language->get_instance_lock();
         script->instances.erase(object_id);
-        SchemeLanguage::get_singleton()->get_binder()->scheme_free_instance(*this);
+        SchemeLanguage::get_singleton()->get_binder()->free_instance(*this);
     }
 }
 
 
-Ref<Script> SchemeScriptInstance::get_script() const {
+Ref<SchemeScript> SchemeScriptInstance::get_script() const {
     return script;
 }
 
@@ -59,55 +56,55 @@ Variant SchemeScriptInstance::callp(
     const Variant **p_args,
     int p_argcount,
     SchemeCallError &r_error) {
-    return SchemeLanguage::get_singleton()->get_binder()->scheme_call(*this, p_method, p_args, p_argcount, &r_error);
+    return SchemeLanguage::get_singleton()->get_binder()->call(*this, p_method, p_args, p_argcount, &r_error);
 }
 
 
 bool SchemeScriptInstance::has_method(const StringName &p_method) const {
-    auto nm = godot::StringName("test");
-    return (p_method) == nm;
+    auto classDef = SchemeLanguage::get_singleton()->get_binder()->get_definition(*(get_script().ptr()));
+    if (classDef == nullptr) {
+        return false;
+    }
+    return classDef->has_method(p_method);
 }
 
 
 void SchemeScriptInstance::notification(int p_notification) {
     // TODO: collect error?
     const Variant* which = &Variant(p_notification);
-    SchemeLanguage::get_singleton()->get_binder()->scheme_call(*this, "_notification", &which, 1, NULL);
+    SchemeLanguage::get_singleton()->get_binder()->call(*this, "_notification", &which, 1, NULL);
 }
 
 
 bool SchemeScriptInstance::set(const StringName &p_name, const Variant &p_value) {
-    return false;
+    return SchemeLanguage::get_singleton()->get_binder()->set(*this, p_name, p_value);
 }
 
 
-bool SchemeScriptInstance::get(const StringName &p_name, Variant &r_ret) const {
-    r_ret = Variant(1);
-    return true;
+bool SchemeScriptInstance::get(const StringName &p_name, Variant *r_ret) const {
+    return SchemeLanguage::get_singleton()->get_binder()->get(*this, p_name, r_ret);
 }
 
-
+// TODO: cache values for property and method lists in SchemeScript instead
 void SchemeScriptInstance::get_property_list(List<PropertyInfo> *p_properties) const {
-    p_properties->push_back(
-        make_property_info(
-        Variant::Type::INT,
-        "test",
-        PropertyHint::PROPERTY_HINT_NONE)
-    );
+    GDClassDefinition* def = SchemeLanguage::get_singleton()->get_binder()->get_definition(*this->script.ptr());
+    for (int i = 0; i < def->properties.size(); i++) {
+        p_properties->push_back((PropertyInfo)(def->properties[i]));
+    }
 }
 
 
-void SchemeScriptInstance::get_method_list(List<MethodInfo> *p_list) const {
-    p_list->push_back(MethodInfo("test"));
+void SchemeScriptInstance::get_method_list(List<MethodInfo> *p_methods) const {
+    GDClassDefinition* def = SchemeLanguage::get_singleton()->get_binder()->get_definition(*this->script.ptr());
+    for (auto iter : def->methods) {
+        p_methods->push_back((MethodInfo)iter.value);
+    }
 }
 
 
 Variant::Type SchemeScriptInstance::get_property_type(const StringName &p_name, bool *r_is_valid) const {
-    if (p_name != StringName("test")) {
-        *r_is_valid = false;
-        return Variant::Type::NIL;
-    }
-    return Variant::Type::INT;
+    GDClassDefinition* def = SchemeLanguage::get_singleton()->get_binder()->get_definition(*this->script.ptr());
+    return (Variant::Type)def->properties[def->property_indices[p_name]].property.type;
 }
 
 
@@ -115,6 +112,8 @@ ScriptLanguage* SchemeScriptInstance::get_language() {
     return script->language;
 };
 
+
+// GDExtension functions ///////////////////////////////////////////////////////
 
 GDExtensionPropertyInfo _convert_prop_info(PropertyInfo &p_info) {
     GDExtensionPropertyInfo info = {};
@@ -164,12 +163,10 @@ GDExtensionObjectPtr s_get_script(GDExtensionScriptInstanceDataPtr void_this) {
 
 void s_free(GDExtensionScriptInstanceDataPtr void_this) {
     memdelete((SchemeScriptInstance*)void_this);
-    // delete void_this;
 }
 
 
 GDExtensionBool s_has_method(GDExtensionScriptInstanceDataPtr p_instance, GDExtensionConstStringNamePtr p_name) {
-    UtilityFunctions::print("s_has_method");
     return reinterpret_cast<SchemeScriptInstance*>(p_instance)->has_method(*reinterpret_cast<const StringName*>(p_name));
 }
 
@@ -182,13 +179,7 @@ void s_call(
         GDExtensionVariantPtr r_return,
         GDExtensionCallError *r_error
     ) {
-    // if (p_argument_count > 0) {
-    //     GDExtensionVariantType typ = godot::internal::gdextension_interface_variant_get_type(*p_args);
-    //     printf("variant int: %d\n", typ);
-    //     const Variant** args = (const Variant**)p_args;
-    //     printf("variant cast int: %d\n", args[0]->get_type());
-    // }
-    auto args = (const Variant**)p_args; //reinterpret_cast<const Variant*>(p_args);
+    auto args = (const Variant**)p_args;
     auto method_name = *reinterpret_cast<const StringName*>(p_method);
     auto ret_ptr = reinterpret_cast<Variant*>(r_return);
     SchemeCallError ret_err;
@@ -211,10 +202,9 @@ GDExtensionBool s_get(
     GDExtensionScriptInstanceDataPtr p_instance,
     GDExtensionConstStringNamePtr p_name,
     GDExtensionVariantPtr r_ret) {
-    auto ret = *reinterpret_cast<Variant*>(r_ret);
+    auto ret = reinterpret_cast<Variant*>(r_ret);
     return reinterpret_cast<SchemeScriptInstance*>(p_instance)->get(
-        *reinterpret_cast<const StringName*>(p_name),
-        ret
+        *reinterpret_cast<const StringName*>(p_name), ret
     );
 }
 
