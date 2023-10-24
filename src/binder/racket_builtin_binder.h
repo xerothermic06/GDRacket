@@ -1,7 +1,7 @@
 #ifndef RACKET_BUILTIN_BINDER_H
 #define RACKET_BUILTIN_BINDER_H
 
-#include "./racket_binder_util.h"
+#include "binder/racket_binder_util.h"
 
 #include "scheme.h"
 

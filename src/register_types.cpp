@@ -7,8 +7,8 @@
 #include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/resource_saver.hpp>
 
-#include "scheme_language.h"
-#include "scheme_script.h"
+#include "racket_language.h"
+#include "racket_script.h"
 
 #include <cstdio>
 
@@ -16,23 +16,23 @@ using namespace godot;
 
 auto INIT_LEVEL = MODULE_INITIALIZATION_LEVEL_SCENE;
 
-Ref<SchemeScriptResourceLoader> loader;
-Ref<SchemeScriptResourceSaver> saver;
+Ref<RacketScriptResourceLoader> loader;
+Ref<RacketScriptResourceSaver> saver;
 
-SchemeLanguage* language = nullptr;
+RacketLanguage* language = nullptr;
 
-void initialize_scheme_module(ModuleInitializationLevel p_level) {
+void initialize_racket_module(ModuleInitializationLevel p_level) {
     if (p_level != INIT_LEVEL) {
         return;
     }
 
-    ClassDB::register_class<SchemeLanguage>();
-    ClassDB::register_class<SchemeScript>();
-    ClassDB::register_class<SchemeScriptResourceLoader>();
-    ClassDB::register_class<SchemeScriptResourceSaver>();
+    ClassDB::register_class<RacketLanguage>();
+    ClassDB::register_class<RacketScript>();
+    ClassDB::register_class<RacketScriptResourceLoader>();
+    ClassDB::register_class<RacketScriptResourceSaver>();
 
-    language = memnew(SchemeLanguage());
-    CRASH_COND_MSG(Engine::get_singleton()->register_script_language(language) != OK, "scheme: language register failed");
+    language = memnew(RacketLanguage());
+    CRASH_COND_MSG(Engine::get_singleton()->register_script_language(language) != OK, "racket: language register failed");
 
     loader.instantiate();
     loader->language = language;
@@ -43,7 +43,7 @@ void initialize_scheme_module(ModuleInitializationLevel p_level) {
 
 }
 
-void uninitialize_scheme_module(ModuleInitializationLevel p_level) {
+void uninitialize_racket_module(ModuleInitializationLevel p_level) {
     if (p_level != INIT_LEVEL) {
         return;
     }
@@ -60,11 +60,11 @@ extern "C" {
 
 // Initialization.
 
-GDExtensionBool GDE_EXPORT gdscheme_init(GDExtensionInterfaceGetProcAddress p_get_proc_address, const GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization) {
+GDExtensionBool GDE_EXPORT gdracket_init(GDExtensionInterfaceGetProcAddress p_get_proc_address, const GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization) {
     godot::GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
 
-    init_obj.register_initializer(initialize_scheme_module);
-    init_obj.register_terminator(uninitialize_scheme_module);
+    init_obj.register_initializer(initialize_racket_module);
+    init_obj.register_terminator(uninitialize_racket_module);
     init_obj.set_minimum_library_initialization_level(INIT_LEVEL);
 
     return init_obj.init();

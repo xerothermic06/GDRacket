@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RACKET_SCRIPT_H
+#define RACKET_SCRIPT_H
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/defs.hpp>
@@ -8,31 +9,31 @@
 #include <godot_cpp/classes/resource_format_saver.hpp>
 #include <godot_cpp/templates/list.hpp>
 
-#include "scheme_language.h"
-#include "scheme_script_instance.h"
+#include "racket_language.h"
+#include "racket_script_instance.h"
 
 
 using namespace godot;
 
 class GDClassDefinition;
 
-class SchemeScript : public ScriptExtension {
-	GDCLASS(SchemeScript, ScriptExtension)
+class RacketScript : public ScriptExtension {
+	GDCLASS(RacketScript, ScriptExtension)
 
-	SchemeLanguage* language = nullptr;
+	RacketLanguage* language = nullptr;
 
     Ref<Mutex> instance_lock;
 	String source_code;
 	GDClassDefinition class_definition;
-	HashMap<uint64_t, SchemeScriptInstance*> instances;
+	HashMap<uint64_t, RacketScriptInstance*> instances;
 	bool is_valid = false;
 
 protected:
 	static void _bind_methods() { }
 
 public:
-	SchemeScript();
-	~SchemeScript();
+	RacketScript();
+	~RacketScript();
 
     MutexLock get_instance_lock() {
 		auto mut_ptr = *instance_lock.ptr();
@@ -101,12 +102,12 @@ public:
 
 // ResourceLoader //////////////////////////////////////////////////////////////
 
-class SchemeScriptResourceLoader : public ResourceFormatLoader {
-	GDCLASS(SchemeScriptResourceLoader, ResourceFormatLoader)
+class RacketScriptResourceLoader : public ResourceFormatLoader {
+	GDCLASS(RacketScriptResourceLoader, ResourceFormatLoader)
 
-	friend void initialize_scheme_module(ModuleInitializationLevel p_level);
-	SchemeLanguage* language = nullptr;
-	// Ref<SchemeLanguage> language;
+	friend void initialize_racket_module(ModuleInitializationLevel p_level);
+	RacketLanguage* language = nullptr;
+	// Ref<RacketLanguage> language;
 
 	Variant _load_script(const String &path) const;
 	Variant _load_module(const String &path) const;
@@ -115,8 +116,8 @@ protected:
 	static void _bind_methods() { }
 
 public:
-	SchemeScriptResourceLoader();
-	~SchemeScriptResourceLoader();
+	RacketScriptResourceLoader();
+	~RacketScriptResourceLoader();
 	PackedStringArray _get_recognized_extensions() const override;
 	bool _handles_type(const StringName& p_type) const override;
 	String _get_resource_type(const String& path) const override;
@@ -131,16 +132,18 @@ public:
 
 // ResourceSaver ///////////////////////////////////////////////////////////////
 
-class SchemeScriptResourceSaver : public ResourceFormatSaver {
-	GDCLASS(SchemeScriptResourceSaver, ResourceFormatSaver)
+class RacketScriptResourceSaver : public ResourceFormatSaver {
+	GDCLASS(RacketScriptResourceSaver, ResourceFormatSaver)
 
 protected:
 	static void _bind_methods() { }
 
 public:
-	SchemeScriptResourceSaver();
-	~SchemeScriptResourceSaver();
+	RacketScriptResourceSaver();
+	~RacketScriptResourceSaver();
 	Error _save(const Ref<Resource> &resource, const String &path, uint32_t flags) override;
 	bool _recognize(const Ref<Resource>& resource) const override;
 	PackedStringArray _get_recognized_extensions(const Ref<Resource>& resource) const override;
 };
+
+#endif // RACKET_SCRIPT_H

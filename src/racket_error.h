@@ -1,10 +1,10 @@
-#pragma once
+#ifndef RACKET_ERROR_H
+#define RACKET_ERROR_H
 
 #include "godot_cpp/variant/string.hpp"
 
-
 // copy-paste of godot::Callable::CallError
-class SchemeCallError {
+class RacketCallError {
 public:
     enum Error {
         CALL_OK,
@@ -21,3 +21,4 @@ public:
     godot::String message;
 };
 
+#endif // RACKET_ERROR_H

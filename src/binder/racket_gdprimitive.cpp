@@ -1,8 +1,8 @@
-#include "util/scheme_classes.h"
+#include "util/racket_classes.h"
 #include "./racket_gdprimitive.h"
 #include "./racket_builtin_binder.h"
 #include "./racket_builtin_api.h"
-#include "./racket_binder.h"
+#include "binder/racket_bc_binder.h"
 #include "schexn.h"
 
 
@@ -139,10 +139,10 @@ Scheme_Object* _gdprimitive_instantiate(int argc, Scheme_Object** argv) {
     if (cls_name.is_empty()) {
         scheme_raise_exn(MZEXN_FAIL, "class name must be symbol", scheme_false);
     }
-    if (!SchemeClassDB::class_exists(cls_name)) {
+    if (!RacketClassDB::class_exists(cls_name)) {
         scheme_raise_exn(MZEXN_FAIL, "non-existent class", scheme_false);
     }
-    return binder->variant_to_scheme_object(SchemeClassDB::instantiate(cls_name));
+    return binder->variant_to_scheme_object(RacketClassDB::instantiate(cls_name));
 }
 
 
@@ -151,7 +151,7 @@ Scheme_Object* _gdprimitive_get_api_class_info(int argc, Scheme_Object** argv) {
         return scheme_null;
     }
     BuiltinBinder* builtin_binder = BuiltinBinder::get_singleton();
-    RacketBinder* racket_binder = RacketBinder::get_singleton();
+    RacketBCBinder* racket_binder = RacketBCBinder::get_singleton();
     StringName class_name = builtin_binder->scheme_object_to_variant(argv[0]);
     if (class_name.is_empty()) {
         return scheme_null;
@@ -161,16 +161,16 @@ Scheme_Object* _gdprimitive_get_api_class_info(int argc, Scheme_Object** argv) {
         ht,
         rkt_sym("methods"),
         racket_binder->array_to_list(
-            SchemeClassDB::class_get_method_list(class_name)));
+            RacketClassDB::class_get_method_list(class_name)));
     scheme_hash_set(
         ht,
         rkt_sym("properties"),
         racket_binder->array_to_list(
-            SchemeClassDB::class_get_property_list(class_name)));
+            RacketClassDB::class_get_property_list(class_name)));
     scheme_hash_set(
         ht,
         rkt_sym("parent"),
-        builtin_binder->variant_to_scheme_object(SchemeClassDB::get_parent_class(class_name))
+        builtin_binder->variant_to_scheme_object(RacketClassDB::get_parent_class(class_name))
     );
     return (Scheme_Object*)ht;
 }

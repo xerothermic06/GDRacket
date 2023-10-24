@@ -1,19 +1,19 @@
 #include "godot_cpp/classes/file_access.hpp"
 
-#include "scheme_language.h"
-#include "scheme_script.h"
+#include "racket_language.h"
+#include "racket_script.h"
 
 
-SchemeScript::SchemeScript() {
-    language = SchemeLanguage::get_singleton();
+RacketScript::RacketScript() {
+    language = RacketLanguage::get_singleton();
 }
 
 
-SchemeScript::~SchemeScript() {
+RacketScript::~RacketScript() {
 }
 
 
-Error SchemeScript::load() {
+Error RacketScript::load() {
     GDClassDefinition def;
     Error err = language->binder->create_definition(*this, def);
     is_valid = err == Error::OK;
@@ -22,43 +22,43 @@ Error SchemeScript::load() {
 }
 
 
-bool SchemeScript::_can_instantiate() const {
+bool RacketScript::_can_instantiate() const {
     return is_valid;
 }
 
 
-bool SchemeScript::_has_source_code() const {
+bool RacketScript::_has_source_code() const {
     return !source_code.is_empty();
 }
 
 
-bool SchemeScript::_has_method(const StringName& method) const {
+bool RacketScript::_has_method(const StringName& method) const {
     return class_definition.methods.has(method);
 }
 
 
-bool SchemeScript::_is_tool() const {
+bool RacketScript::_is_tool() const {
     return false;
 }
 
 
-bool SchemeScript::_is_valid() const {
+bool RacketScript::_is_valid() const {
     return is_valid;
 }
 
 
-ScriptLanguage* SchemeScript::_get_language() const {
+ScriptLanguage* RacketScript::_get_language() const {
     return language;
 }
 
 
-bool SchemeScript::_has_script_signal(const StringName& signal) const {
+bool RacketScript::_has_script_signal(const StringName& signal) const {
     // TODO: check for equivalent hyphentated sexpr name
     return class_definition.signals.has(signal);
 }
 
 
-TypedArray<Dictionary> SchemeScript::_get_script_signal_list() const {
+TypedArray<Dictionary> RacketScript::_get_script_signal_list() const {
     auto signals = Array();
     for (const KeyValue<StringName, GDMethod> kv : class_definition.signals) {
         signals.push_back(Dictionary(kv.value));
@@ -67,7 +67,7 @@ TypedArray<Dictionary> SchemeScript::_get_script_signal_list() const {
 }
 
 
-TypedArray<Dictionary> SchemeScript::_get_script_method_list() const {
+TypedArray<Dictionary> RacketScript::_get_script_method_list() const {
     auto methods = Array();
     for (const KeyValue<StringName, GDMethod> kv : class_definition.methods) {
         methods.push_back(Dictionary(kv.value));
@@ -76,7 +76,7 @@ TypedArray<Dictionary> SchemeScript::_get_script_method_list() const {
 }
 
 
-TypedArray<Dictionary> SchemeScript::_get_script_property_list() const {
+TypedArray<Dictionary> RacketScript::_get_script_property_list() const {
     TypedArray<Dictionary> properties;
     const Script *cur_script = this;
     while (cur_script) {
@@ -90,12 +90,12 @@ TypedArray<Dictionary> SchemeScript::_get_script_property_list() const {
 }
 
 
-Dictionary SchemeScript::_get_constants() const {
+Dictionary RacketScript::_get_constants() const {
     return Dictionary();
 }
 
 
-TypedArray<StringName> SchemeScript::_get_members() const {
+TypedArray<StringName> RacketScript::_get_members() const {
     TypedArray<StringName> members;
 
     for (const GDClassProperty &prop : class_definition.properties)
@@ -105,20 +105,20 @@ TypedArray<StringName> SchemeScript::_get_members() const {
 }
 
 
-bool SchemeScript::_is_placeholder_fallback_enabled() const {
+bool RacketScript::_is_placeholder_fallback_enabled() const {
     return false;
 }
 
 
-Ref<Script> SchemeScript::_get_base_script() const {
+Ref<Script> RacketScript::_get_base_script() const {
     return Ref<Script>();
 }
 
 
-StringName SchemeScript::_get_instance_base_type() const {
+StringName RacketScript::_get_instance_base_type() const {
     StringName extends = StringName(class_definition.extends);
 
-    if (extends != StringName() && SchemeClassDB::class_exists(extends)) {
+    if (extends != StringName() && RacketClassDB::class_exists(extends)) {
         return extends;
     }
 
@@ -130,47 +130,47 @@ StringName SchemeScript::_get_instance_base_type() const {
 }
 
 
-String SchemeScript::_get_source_code() const {
+String RacketScript::_get_source_code() const {
     return source_code;
 }
 
 
-void SchemeScript::_set_source_code(const String& code) {
+void RacketScript::_set_source_code(const String& code) {
     source_code = code;
 }
 
 
-void SchemeScript::_update_exports() {
+void RacketScript::_update_exports() {
     // TODO: Figure out what this is supposed to do
 }
 
 
-void* SchemeScript::_instance_create(Object* for_object) const {
-    return SchemeScriptInstance::create_instance(this, for_object);
+void* RacketScript::_instance_create(Object* for_object) const {
+    return RacketScriptInstance::create_instance(this, for_object);
 }
 
 
-TypedArray<Dictionary> SchemeScript::_get_documentation() const {
+TypedArray<Dictionary> RacketScript::_get_documentation() const {
     return Array();
 }
 
 
-bool SchemeScript::_has_property_default_value(const StringName&) const {
+bool RacketScript::_has_property_default_value(const StringName&) const {
     return false;
 }
 
 
-bool SchemeScript::_editor_can_reload_from_file() {
+bool RacketScript::_editor_can_reload_from_file() {
     return true;
 }
 
 
-StringName SchemeScript::_get_global_name() const {
+StringName RacketScript::_get_global_name() const {
     return get_name();
 }
 
 
-bool SchemeScript::_inherits_script(const Ref<Script> &p_script) const {
+bool RacketScript::_inherits_script(const Ref<Script> &p_script) const {
     Ref<Script> script = p_script;
     if (script.is_null())
         return false;
@@ -188,19 +188,19 @@ bool SchemeScript::_inherits_script(const Ref<Script> &p_script) const {
 }
 
 
-bool SchemeScript::_instance_has(Object *object) const {
-    SchemeLanguage::get_singleton()->get_instance_lock();
+bool RacketScript::_instance_has(Object *object) const {
+    RacketLanguage::get_singleton()->get_instance_lock();
     return instances.has(object->get_instance_id());
 }
 
 
-Error SchemeScript::_reload(bool keep_state) {
+Error RacketScript::_reload(bool keep_state) {
     // TODO: update instances dynamically
     return load();
 }
 
 
-Dictionary SchemeScript::_get_method_info(const StringName &method) const {
+Dictionary RacketScript::_get_method_info(const StringName &method) const {
     HashMap<StringName, GDMethod>::ConstIterator method_info =
         class_definition.methods.find(method);
     if (method_info) {
@@ -210,7 +210,7 @@ Dictionary SchemeScript::_get_method_info(const StringName &method) const {
 }
 
 
-Variant SchemeScript::_get_property_default_value(const StringName &property) const {
+Variant RacketScript::_get_property_default_value(const StringName &property) const {
     HashMap<StringName, uint64_t>::ConstIterator prop =
         class_definition.property_indices.find(property);
     if (prop) {
@@ -223,12 +223,12 @@ Variant SchemeScript::_get_property_default_value(const StringName &property) co
 }
 
 
-int32_t SchemeScript::_get_member_line(const StringName &member) const {
+int32_t RacketScript::_get_member_line(const StringName &member) const {
     return 0;
 }
 
 
-Variant SchemeScript::_get_rpc_config() const {
+Variant RacketScript::_get_rpc_config() const {
     Dictionary rpcs;
 
     for (const KeyValue<StringName, GDRpc> &pair : class_definition.rpcs)
@@ -240,13 +240,13 @@ Variant SchemeScript::_get_rpc_config() const {
 
 // ResourceLoader //////////////////////////////////////////////////////////////
 
-SchemeScriptResourceLoader::SchemeScriptResourceLoader() {}
+RacketScriptResourceLoader::RacketScriptResourceLoader() {}
 
 
-SchemeScriptResourceLoader::~SchemeScriptResourceLoader() {}
+RacketScriptResourceLoader::~RacketScriptResourceLoader() {}
 
 
-Variant SchemeScriptResourceLoader::_load_module(const String &path) const {
+Variant RacketScriptResourceLoader::_load_module(const String &path) const {
     Ref<SchemeModule> modul;
     modul.instantiate();
     Error err;
@@ -260,8 +260,8 @@ Variant SchemeScriptResourceLoader::_load_module(const String &path) const {
     return modul;
 }
 
-Variant SchemeScriptResourceLoader::_load_script(const String &path) const {
-    Ref<SchemeScript> script;
+Variant RacketScriptResourceLoader::_load_script(const String &path) const {
+    Ref<RacketScript> script;
     script.instantiate();
 
     Error err;
@@ -273,12 +273,12 @@ Variant SchemeScriptResourceLoader::_load_script(const String &path) const {
     }
     script->set_path(path);
     script->load();
-    SchemeLanguage::get_singleton()->scripts.insert(path, script);
+    RacketLanguage::get_singleton()->scripts.insert(path, script);
 
     return script;
 }
 
-Variant SchemeScriptResourceLoader::_load(const String &path, const String &original_path, bool use_sub_threads, int32_t cache_mode) const {
+Variant RacketScriptResourceLoader::_load(const String &path, const String &original_path, bool use_sub_threads, int32_t cache_mode) const {
     if (path.ends_with(".gd.rkt")) {
         return _load_script(path);
     }
@@ -287,38 +287,38 @@ Variant SchemeScriptResourceLoader::_load(const String &path, const String &orig
 }
 
 
-PackedStringArray SchemeScriptResourceLoader::_get_recognized_extensions() const {
+PackedStringArray RacketScriptResourceLoader::_get_recognized_extensions() const {
     // TODO: Add support for module files
     PackedStringArray extensions;
-    extensions.append(SchemeLanguage::s_get_extension());
+    extensions.append(RacketLanguage::s_get_extension());
     return extensions;
 }
 
 
-bool SchemeScriptResourceLoader::_handles_type(const StringName& p_type) const {
-    return (p_type == SchemeLanguage::s_get_type() || p_type == StringName("SchemeModule"));
+bool RacketScriptResourceLoader::_handles_type(const StringName& p_type) const {
+    return (p_type == RacketLanguage::s_get_type() || p_type == StringName("SchemeModule"));
 }
 
-String SchemeScriptResourceLoader::_get_resource_type(const String& p_path) const {
+String RacketScriptResourceLoader::_get_resource_type(const String& p_path) const {
     if (p_path.ends_with(".gd.rkt")) {
-        return SchemeLanguage::s_get_type();
+        return RacketLanguage::s_get_type();
     }
     return "SchemeModule";
 }
 
-PackedStringArray SchemeScriptResourceLoader::_get_dependencies(const String& path, bool add_types) const {
+PackedStringArray RacketScriptResourceLoader::_get_dependencies(const String& path, bool add_types) const {
     // TODO: link script deps to modules?
     return PackedStringArray();
 }
 
-bool SchemeScriptResourceLoader::_recognize_path(const String &path, const StringName &type) const {
-	return path.get_extension() == SchemeLanguage::s_get_extension();
+bool RacketScriptResourceLoader::_recognize_path(const String &path, const StringName &type) const {
+	return path.get_extension() == RacketLanguage::s_get_extension();
 }
 
 
-String SchemeScriptResourceLoader::_get_resource_script_class(const String &path) const {
+String RacketScriptResourceLoader::_get_resource_script_class(const String &path) const {
     if (path.ends_with(".gd.rkt")) {
-        return SchemeLanguage::s_get_type();
+        return RacketLanguage::s_get_type();
     }
     return "SchemeModule";
 }
@@ -326,16 +326,16 @@ String SchemeScriptResourceLoader::_get_resource_script_class(const String &path
 
 // ResourceSaver ///////////////////////////////////////////////////////////////
 
-SchemeScriptResourceSaver::SchemeScriptResourceSaver() {}
+RacketScriptResourceSaver::RacketScriptResourceSaver() {}
 
 
-SchemeScriptResourceSaver::~SchemeScriptResourceSaver() {}
+RacketScriptResourceSaver::~RacketScriptResourceSaver() {}
 
 
-Error SchemeScriptResourceSaver::_save(const Ref<Resource> &resource, const String &path, uint32_t flags) {
+Error RacketScriptResourceSaver::_save(const Ref<Resource> &resource, const String &path, uint32_t flags) {
     String source;
     if (path.ends_with(".gd.rkt")) {
-        Ref<SchemeScript> script = resource;
+        Ref<RacketScript> script = resource;
         ERR_FAIL_COND_V(script.is_null(), ERR_INVALID_PARAMETER);
         source = script->get_source_code();
     } else {
@@ -356,15 +356,15 @@ Error SchemeScriptResourceSaver::_save(const Ref<Resource> &resource, const Stri
 }
 
 
-bool SchemeScriptResourceSaver::_recognize(const Ref<Resource>& p_resource) const {
+bool RacketScriptResourceSaver::_recognize(const Ref<Resource>& p_resource) const {
     const String resource_class = p_resource->get_class();
-    const String our_class = SchemeScript::get_class_static();
+    const String our_class = RacketScript::get_class_static();
     return (resource_class == our_class);
 }
 
 
-PackedStringArray SchemeScriptResourceSaver::_get_recognized_extensions(const Ref<Resource>& resource) const {
+PackedStringArray RacketScriptResourceSaver::_get_recognized_extensions(const Ref<Resource>& resource) const {
     PackedStringArray extensions;
-    extensions.append(SchemeLanguage::s_get_extension());
+    extensions.append(RacketLanguage::s_get_extension());
     return extensions;
 }

@@ -1,8 +1,8 @@
-﻿#pragma once
+﻿#ifndef RACKET_LANGUAGE_H
+#define RACKET_LANGUAGE_H
 
 #include "scheme_lang.h"
-#include "scheme_binder.h"
-// #include "binder/chibi_scheme_binder.h"
+#include "racket_binder.h"
 
 #include <godot_cpp/classes/mutex.hpp>
 #include <godot_cpp/core/mutex_lock.hpp>
@@ -10,35 +10,31 @@
 #include <godot_cpp/classes/script.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
+
 using namespace godot;
 
-// class SchemeScript;
-// class SchemeBinder;
-// class ChibiSchemeBinder;
-// class SchemeThreadContext;
+class RacketLanguage : public ScriptLanguageExtension {
+    GDCLASS(RacketLanguage, ScriptLanguageExtension)
 
-class SchemeLanguage : public ScriptLanguageExtension {
-    GDCLASS(SchemeLanguage, ScriptLanguageExtension)
+    friend class RacketScript;
+    friend class RacketScriptResourceLoader;
 
-    friend class SchemeScript;
-    friend class SchemeScriptResourceLoader;
-
-    static SchemeLanguage* singleton;
+    static RacketLanguage* singleton;
 
     HashMap<String, Ref<Script>> scripts;
-    SchemeBinder *binder;
+    RacketBinder *binder;
     Ref<Mutex> instance_lock;
 
 protected:
     static void _bind_methods() { }
-    // SchemeScript* _do_create_script() const;
+    // RacketScript* _do_create_script() const;
 
 public:
 
-    SchemeLanguage();
-    ~SchemeLanguage();
+    RacketLanguage();
+    ~RacketLanguage();
 
-    static SchemeLanguage* get_singleton() {
+    static RacketLanguage* get_singleton() {
         return singleton;
     }
 
@@ -48,7 +44,7 @@ public:
     }
 
 
-    SchemeBinder* get_binder() {
+    RacketBinder* get_binder() {
         return binder;
     }
 
@@ -165,3 +161,5 @@ public:
     // godot::Ref<godot::ScriptLanguageThreadContextExtension> _create_thread_context() const override;
 
 };
+
+#endif // RACKET_LANGUAGE_H

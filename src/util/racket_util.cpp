@@ -1,4 +1,4 @@
-#include "util/scheme_util.h"
+#include "util/racket_util.h"
 
 #include <iostream>
 
@@ -7,7 +7,7 @@
 #include <godot_cpp/variant/string.hpp>
 
 
-String SchemeUtil::resource_type_hint(const String &p_type) {
+String RacketUtil::resource_type_hint(const String &p_type) {
     Array hint_values;
     hint_values.resize(3);
     hint_values[0] = Variant::OBJECT;
@@ -18,17 +18,17 @@ String SchemeUtil::resource_type_hint(const String &p_type) {
 }
 
 
-const char* SchemeUtil::string_to_charptr(const String s) {
+const char* RacketUtil::string_to_charptr(const String s) {
     CharString st = s.utf8();
     return st.get_data();
 }
 
 
-void SchemeUtil::log(const String msg) {
+void RacketUtil::log(const String msg) {
     std::cout << msg.utf8().get_data();
 }
 
 
-void SchemeUtil::logln(const String msg) {
+void RacketUtil::logln(const String msg) {
     std::cout << msg.utf8().get_data() << std::endl;
 }

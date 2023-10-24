@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RACKET_CLASS_DB_H
+#define RACKET_CLASS_DB_H
 
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/string_name.hpp>
@@ -6,7 +7,7 @@
 
 using namespace godot;
 
-class SchemeClassDB {
+class RacketClassDB {
     static Object* class_db;
     static Object* get_class_db();
 
@@ -21,3 +22,4 @@ public:
 
 };
 
+#endif // RACKET_CLASS_DB_H

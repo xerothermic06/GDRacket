@@ -9,16 +9,16 @@
 #include "godot_cpp/templates/hash_set.hpp"
 #include "godot_cpp/classes/thread.hpp"
 
-#include "scheme_error.h"
-#include "util/scheme_classes.h"
-#include "scheme_binder.h"
+#include "racket_error.h"
+#include "racket_binder.h"
+#include "util/racket_classes.h"
 
 #include "scheme.h"
 
-// SchemeBinder for RacketBC.
-class RacketBinder : public SchemeBinder {
+// RacketBinder for RacketBC.
+class RacketBCBinder : public RacketBinder {
 
-    static RacketBinder* singleton;
+    static RacketBCBinder* singleton;
 
     HashMap<uint32_t, Scheme_Env*> script_id_namespace_map;
     // Mapping from Script ID -> Racket symbol for module path
@@ -36,23 +36,23 @@ public:
         EVAL_TYPE_GLOBAL,
     };
 
-    RacketBinder();
-    ~RacketBinder();
+    RacketBCBinder();
+    ~RacketBCBinder();
 
-    static RacketBinder* get_singleton();
+    static RacketBCBinder* get_singleton();
 
-    Error create_definition(const SchemeScript &script, GDClassDefinition& def);
-    GDClassDefinition* get_definition(const SchemeScript &script);
-    void delete_definition(const SchemeScript &p_script);
+    Error create_definition(const RacketScript &script, GDClassDefinition& def);
+    GDClassDefinition* get_definition(const RacketScript &script);
+    void delete_definition(const RacketScript &p_script);
 
-    int32_t get_member_line(SchemeScriptInstance &p_target, const StringName &member);
+    int32_t get_member_line(RacketScriptInstance &p_target, const StringName &member);
 
-    Error initialize_instance(SchemeScriptInstance &p_target);
-    Variant call(SchemeScriptInstance &p_target, const String p_func_name, const Variant **p_args, int p_argcount, SchemeCallError* r_error);
-    bool set(SchemeScriptInstance &p_target, const StringName &p_name, const Variant &p_value);
-    bool get(const SchemeScriptInstance &p_target, const StringName, Variant *r_ret) const;
-    bool has_method(const SchemeScriptInstance &p_target, const StringName &p_method) const;
-    void free_instance(SchemeScriptInstance &p_target);
+    Error initialize_instance(RacketScriptInstance &p_target);
+    Variant call(RacketScriptInstance &p_target, const String p_func_name, const Variant **p_args, int p_argcount, RacketCallError* r_error);
+    bool set(RacketScriptInstance &p_target, const StringName &p_name, const Variant &p_value);
+    bool get(const RacketScriptInstance &p_target, const StringName, Variant *r_ret) const;
+    bool has_method(const RacketScriptInstance &p_target, const StringName &p_method) const;
+    void free_instance(RacketScriptInstance &p_target);
 
 private:
     Variant _extract_variant_with_collections(Scheme_Object* p_obj);

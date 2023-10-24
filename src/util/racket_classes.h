@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RACKET_CLASSES_H
+#define RACKET_CLASSES_H
 
 #include <gdextension_interface.h>
 
@@ -16,11 +17,11 @@
 #include <godot_cpp/variant/string_name.hpp>
 #include <godot_cpp/variant/variant.hpp>
 
-#include "util/scheme_class_db.h"
-#include "util/scheme_util.h"
+#include "util/racket_class_db.h"
+#include "util/racket_util.h"
 
 // Circular dep
-class SchemeScript;
+class RacketScript;
 
 using namespace godot;
 
@@ -49,7 +50,7 @@ struct GDProperty {
     // void set_object_type(const String &p_type) {
     //     type = GDEXTENSION_VARIANT_TYPE_OBJECT;
 
-    //     if (SchemeClassDB::is_parent_class(p_type, "Resource")) {
+    //     if (RacketClassDB::is_parent_class(p_type, "Resource")) {
     //         hint = PROPERTY_HINT_RESOURCE_TYPE;
     //         hint_string = p_type;
     //     } else {
@@ -63,7 +64,7 @@ struct GDProperty {
 
     //     if (p_type.type == GDEXTENSION_VARIANT_TYPE_OBJECT) {
     //         if (p_type.hint == PROPERTY_HINT_RESOURCE_TYPE) {
-    //             hint_string = SchemeUtil::resource_type_hint(p_type.hint_string);
+    //             hint_string = RacketUtil::resource_type_hint(p_type.hint_string);
     //         } else {
     //             hint_string = p_type.class_name;
     //         }
@@ -153,3 +154,5 @@ struct GDClassDefinition {
 
     bool has_base_script() const;
 };
+
+#endif // RACKET_CLASSES_H

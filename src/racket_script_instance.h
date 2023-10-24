@@ -1,37 +1,38 @@
-#pragma once
+#ifndef RACKET_SCRIPT_INSTANCE_H
+#define RACKET_SCRIPT_INSTANCE_H
 
-#include "scheme_binder.h"
-#include "scheme_error.h"
-#include "scheme_language.h"
+#include "racket_binder.h"
+#include "racket_error.h"
+#include "racket_language.h"
 
 #include <godot_cpp/variant/string_name.hpp>
 #include <godot_cpp/classes/ref.hpp>
 #include <godot_cpp/core/object.hpp>
 
 
-class SchemeScript;
-class SchemeBinder;
+class RacketScript;
+class RacketBinder;
 
 
 // ScriptInstance for Scheme objects. Nominally extends godot::ScriptInstance which is not exposed
 // in GDExtension.
-class SchemeScriptInstance {
-    friend class SchemeBinder;
+class RacketScriptInstance {
+    friend class RacketBinder;
 
     static GDExtensionScriptInstanceInfo instance_info;
 
-    Ref<SchemeScript> script;
+    Ref<RacketScript> script;
     // Godot object this instance is attached to
     godot::Object* owner_object;
     // Scheme object for this instance
     void* scheme_object;
 
 public:
-    explicit SchemeScriptInstance(Ref<SchemeScript> script,
+    explicit RacketScriptInstance(Ref<RacketScript> script,
                                        godot::Object* owner_object);
-    ~SchemeScriptInstance();
+    ~RacketScriptInstance();
 
-    static GDExtensionScriptInstancePtr create_instance(const SchemeScript* parent, godot::Object* host_object);
+    static GDExtensionScriptInstancePtr create_instance(const RacketScript* parent, godot::Object* host_object);
 
     void* get_scheme_object() {
         return scheme_object;
@@ -45,9 +46,9 @@ public:
 	virtual bool get(const StringName &p_name, Variant *r_ret) const;
 	virtual void get_property_list(List<PropertyInfo> *p_properties) const;
 
-	virtual Variant callp(const StringName &p_method, const Variant **p_args, int p_argcount, SchemeCallError &r_error);
+	virtual Variant callp(const StringName &p_method, const Variant **p_args, int p_argcount, RacketCallError &r_error);
 
-	virtual Ref<SchemeScript> get_script() const;
+	virtual Ref<RacketScript> get_script() const;
 
     // free_property_list_func
     // free_property_list_func
@@ -92,7 +93,7 @@ class SchemeScriptInstanceGlue {
 public:
     static GDExtensionPropertyInfo _convert_prop_info(PropertyInfo &p_info);
     static GDExtensionMethodInfo _convert_method_info(MethodInfo info);
-    static GDExtensionCallError _convert_call_err(SchemeCallError p_err);
+    static GDExtensionCallError _convert_call_err(RacketCallError p_err);
     static GDExtensionObjectPtr s_get_script(GDExtensionScriptInstanceDataPtr void_this);
     static void s_free(GDExtensionScriptInstanceDataPtr void_this);
     static GDExtensionBool s_has_method(GDExtensionScriptInstanceDataPtr p_instance, GDExtensionConstStringNamePtr p_name);
@@ -128,3 +129,4 @@ public:
 
 };
 
+#endif // RACKET_SCRIPT_INSTANCE_H

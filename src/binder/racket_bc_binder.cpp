@@ -1,4 +1,4 @@
-#include "racket_binder.h"
+#include "racket_bc_binder.h"
 
 #include <stdio.h>
 
@@ -11,9 +11,9 @@
 #include "./racket_builtin_binder.h"
 #include "./racket_gdprimitive.h"
 #include "godot_cpp/classes/engine.hpp"
-#include "scheme_script.h"
-#include "scheme_script_instance.h"
-#include "util/scheme_util.h"
+#include "racket_script.h"
+#include "racket_script_instance.h"
+#include "util/racket_util.h"
 
 // Include Racket bytecode-bootstrapping sources
 // racoBC ctool --c-mods racket_modules.c ++lib racket/main ++lib racket/base ++lib racket/class ++lib racket/vector ++lib racket/lang/reader ++lib racket/runtime-config
@@ -134,10 +134,10 @@ Scheme_Object* generate_racket_class_wrapper(StringName& p_class_name) {
     if (p_class_name == StringName("Object")) {
         parent = "object%";
     } else {
-        parent = SchemeClassDB::get_parent_class(p_class_name);
+        parent = RacketClassDB::get_parent_class(p_class_name);
     }
-    Array property_list = SchemeClassDB::class_get_property_list(p_class_name);
-    Array method_list = SchemeClassDB::class_get_method_list(p_class_name);
+    Array property_list = RacketClassDB::class_get_property_list(p_class_name);
+    Array method_list = RacketClassDB::class_get_method_list(p_class_name);
 
     Scheme_Object* properties_sexpr = scheme_make_null();
     for (int i = 0; i < property_list.size(); i++) {
@@ -208,22 +208,22 @@ Scheme_Object* _env_fork_namespace(const char* ns_name, Scheme_Env* parent_env) 
     return dest_ns;
 }
 
-RacketBinder* RacketBinder::singleton = nullptr;
-RacketBinder* RacketBinder::get_singleton() {
+RacketBCBinder* RacketBCBinder::singleton = nullptr;
+RacketBCBinder* RacketBCBinder::get_singleton() {
     if (singleton == nullptr) {
-        singleton = new RacketBinder();
+        singleton = new RacketBCBinder();
     }
     return singleton;
 }
 
-RacketBinder::RacketBinder() {
+RacketBCBinder::RacketBCBinder() {
     _setup_tls_space();
     scheme_main_stack_setup(
         1, [](void* data) -> int {
             RacketBinder* setup_data = (RacketBinder*)data;
 
             Scheme_Object* collects_paths = rkt_list(
-                gdstr2rktstr(SchemeLanguage::get_singleton()->get_install_dir()));
+                gdstr2rktstr(RacketLanguage::get_singleton()->get_install_dir()));
 
             root_scheme_env = scheme_basic_env();
             // // TODO: Create port that pipes racket output to godot's
@@ -240,11 +240,11 @@ RacketBinder::RacketBinder() {
         (void*)this);
 }
 
-RacketBinder::~RacketBinder() {
+RacketBCBinder::~RacketBCBinder() {
     // TODO: figure out how to tear down Racket
 }
 
-GDClassDefinition* RacketBinder::get_definition(const SchemeScript& script) {
+GDClassDefinition* RacketBCBinder::get_definition(const RacketScript& script) {
     if (script_id_definition_map.has(script.get_instance_id())) {
         return &script_id_definition_map.get(script.get_instance_id());
     }
@@ -252,7 +252,7 @@ GDClassDefinition* RacketBinder::get_definition(const SchemeScript& script) {
 }
 
 // TODO: finalize definitions when scripts are changed or deleted
-Error RacketBinder::create_definition(const SchemeScript& script, GDClassDefinition& def) {
+Error RacketBCBinder::create_definition(const RacketScript& script, GDClassDefinition& def) {
     const char* script_source = script.get_source_code().utf8().get_data();
     const char* script_name = script.get_path().utf8().get_data();
     Scheme_Object* script_module_name = rkt_sym(script_name);
@@ -282,7 +282,7 @@ Error RacketBinder::create_definition(const SchemeScript& script, GDClassDefinit
     return Error::OK;
 }
 
-void RacketBinder::delete_definition(const SchemeScript& p_script) {
+void RacketBCBinder::delete_definition(const RacketScript& p_script) {
     uint32_t instance_id = p_script.get_instance_id();
     script_id_class_map.erase(instance_id);
     script_id_definition_map.erase(instance_id);
@@ -294,7 +294,7 @@ Scheme_Object* _rkt_eval_handle(Scheme_Object* app_list) {
         rkt_quote(app_list));
 }
 
-Error RacketBinder::initialize_instance(SchemeScriptInstance& p_target) {
+Error RacketBCBinder::initialize_instance(RacketScriptInstance& p_target) {
     // TODO: allow non-class instances
     uint64_t script_instance_id = p_target.get_script()->get_instance_id();
     if (!script_id_class_map.has(script_instance_id)) {
@@ -329,11 +329,11 @@ Error RacketBinder::initialize_instance(SchemeScriptInstance& p_target) {
     return Error::OK;
 }
 
-int32_t RacketBinder::get_member_line(SchemeScriptInstance& p_target, const StringName& member) {
+int32_t RacketBCBinder::get_member_line(RacketScriptInstance& p_target, const StringName& member) {
     return 0;
 }
 
-Variant RacketBinder::call(SchemeScriptInstance& p_target, const String p_func_name, const Variant** p_args, int p_argcount, SchemeCallError* r_error) {
+Variant RacketBCBinder::call(RacketScriptInstance& p_target, const String p_func_name, const Variant** p_args, int p_argcount, RacketCallError* r_error) {
     BuiltinBinder* builtinBinder = BuiltinBinder::get_singleton();
 
     uint32_t instance_id = p_target.get_owner()->get_instance_id();
@@ -379,7 +379,7 @@ Variant RacketBinder::call(SchemeScriptInstance& p_target, const String p_func_n
     return builtinBinder->scheme_object_to_variant(SCHEME_CDR(out));  // rkt_obj2gd_obj(SCHEME_CDR(out));
 }
 
-bool RacketBinder::set(SchemeScriptInstance& p_target, const StringName& p_name, const Variant& p_value) {
+bool RacketBCBinder::set(RacketScriptInstance& p_target, const StringName& p_name, const Variant& p_value) {
     // TODO: set up something to reduce hash table lookups?
     uint32_t owner_id = p_target.get_owner()->get_instance_id();
     uint32_t script_id = p_target.get_script()->get_instance_id();
@@ -397,7 +397,7 @@ bool RacketBinder::set(SchemeScriptInstance& p_target, const StringName& p_name,
     return true;
 }
 
-bool RacketBinder::get(const SchemeScriptInstance& p_target, const StringName p_name, Variant* r_ret) const {
+bool RacketBCBinder::get(const RacketScriptInstance& p_target, const StringName p_name, Variant* r_ret) const {
     uint32_t owner_id = p_target.get_owner()->get_instance_id();
     uint32_t script_id = p_target.get_script()->get_instance_id();
 
@@ -415,7 +415,7 @@ bool RacketBinder::get(const SchemeScriptInstance& p_target, const StringName p_
     return true;
 }
 
-bool RacketBinder::has_method(const SchemeScriptInstance& p_target, const StringName& p_method) const {
+bool RacketBCBinder::has_method(const RacketScriptInstance& p_target, const StringName& p_method) const {
     uint32_t scr_instid = p_target.get_script()->get_instance_id();
     if (!script_id_definition_map.has(scr_instid)) {
         return false;
@@ -424,7 +424,7 @@ bool RacketBinder::has_method(const SchemeScriptInstance& p_target, const String
     return defn->has_method(p_method);
 }
 
-void RacketBinder::free_instance(SchemeScriptInstance& p_target) {
+void RacketBCBinder::free_instance(RacketScriptInstance& p_target) {
     uint32_t inst_id = p_target.get_owner()->get_instance_id();
     if (!instance_id_ctx_map.has(inst_id)) {
         return;
@@ -449,7 +449,7 @@ Scheme_Object* _list_or_vector_to_list(Scheme_Object* p_obj) {
     return scheme_null;
 }
 
-Scheme_Object* RacketBinder::_extract_scheme_value_with_collections(Variant p_value) {
+Scheme_Object* RacketBCBinder::_extract_scheme_value_with_collections(Variant p_value) {
     BuiltinBinder* binder = BuiltinBinder::get_singleton();
     if (p_value.get_type() == Variant::Type::ARRAY) {
         return array_to_list(p_value);
@@ -459,7 +459,7 @@ Scheme_Object* RacketBinder::_extract_scheme_value_with_collections(Variant p_va
     return binder->variant_to_scheme_object(p_value);
 }
 
-Scheme_Object* RacketBinder::array_to_list(Array arr) {
+Scheme_Object* RacketBCBinder::array_to_list(Array arr) {
     Scheme_Object* res = scheme_null;
     BuiltinBinder* binder = BuiltinBinder::get_singleton();
     for (int i = arr.size() - 1; i >= 0; i--) {
@@ -469,7 +469,7 @@ Scheme_Object* RacketBinder::array_to_list(Array arr) {
     return res;
 }
 
-Scheme_Object* RacketBinder::dictionary_to_hashtable(Dictionary dict) {
+Scheme_Object* RacketBCBinder::dictionary_to_hashtable(Dictionary dict) {
     BuiltinBinder* binder = BuiltinBinder::get_singleton();
     Scheme_Hash_Table* res = scheme_make_hash_table_equal();  // rkt_eval(rkt_sym("hash"));
     Array keys = dict.keys();
@@ -484,7 +484,7 @@ Scheme_Object* RacketBinder::dictionary_to_hashtable(Dictionary dict) {
     return (Scheme_Object*)res;
 }
 
-Variant RacketBinder::_extract_variant_with_collections(Scheme_Object* p_obj) {
+Variant RacketBCBinder::_extract_variant_with_collections(Scheme_Object* p_obj) {
     BuiltinBinder* b_binder = BuiltinBinder::get_singleton();
     if (rkt_eval(rkt_sym("hash?"), p_obj)) {
         return hashtable_to_dictionary(p_obj);
@@ -495,7 +495,7 @@ Variant RacketBinder::_extract_variant_with_collections(Scheme_Object* p_obj) {
     return b_binder->scheme_object_to_variant(p_obj);
 }
 
-Array RacketBinder::list_or_vector_to_array(Scheme_Object* p_obj) {
+Array RacketBCBinder::list_or_vector_to_array(Scheme_Object* p_obj) {
     BuiltinBinder* binder = BuiltinBinder::get_singleton();
     Array res;
     Scheme_Object* lst = _list_or_vector_to_list(p_obj);
@@ -507,7 +507,7 @@ Array RacketBinder::list_or_vector_to_array(Scheme_Object* p_obj) {
     return res;
 }
 
-Dictionary RacketBinder::hashtable_to_dictionary(Scheme_Object* p_obj) {
+Dictionary RacketBCBinder::hashtable_to_dictionary(Scheme_Object* p_obj) {
     BuiltinBinder* binder = BuiltinBinder::get_singleton();
     Dictionary res;
     ERR_FAIL_COND_V_MSG(scheme_false == rkt_eval(rkt_sym("hash?"), p_obj), res, "not a hash table");

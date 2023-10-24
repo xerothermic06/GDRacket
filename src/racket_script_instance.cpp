@@ -1,26 +1,26 @@
 #include <godot_cpp/godot.hpp>
 
-#include "scheme_script_instance.h"
-#include "scheme_language.h"
-#include "scheme_error.h"
-#include "scheme_script.h"
+#include "racket_script_instance.h"
+#include "racket_language.h"
+#include "racket_error.h"
+#include "racket_script.h"
 #include <cstdio>
 
 // ReSharper disable CppClangTidyMiscMisplacedConst
 // ReSharper disable CppMemberFunctionMayBeConst
 
 
-GDExtensionScriptInstancePtr SchemeScriptInstance::create_instance(const SchemeScript* parent,
+GDExtensionScriptInstancePtr RacketScriptInstance::create_instance(const RacketScript* parent,
                                                                      godot::Object* host_object) {
-    auto parent_ref = Ref<SchemeScript>(parent);
-    auto inst = memnew(SchemeScriptInstance(parent_ref, host_object));
+    auto parent_ref = Ref<RacketScript>(parent);
+    auto inst = memnew(RacketScriptInstance(parent_ref, host_object));
 
     {
         auto lock = parent->language->get_instance_lock();
         parent_ref->instances.insert(parent->get_instance_id(), inst);
     }
 
-    auto instance_info = &SchemeScriptInstance::instance_info;
+    auto instance_info = &RacketScriptInstance::instance_info;
 
     GDExtensionScriptInstancePtr instPtr = godot::internal::gdextension_interface_script_instance_create(
         instance_info, inst);
@@ -29,39 +29,39 @@ GDExtensionScriptInstancePtr SchemeScriptInstance::create_instance(const SchemeS
 }
 
 
-SchemeScriptInstance::SchemeScriptInstance(Ref<SchemeScript> script, godot::Object* owner_object):
+RacketScriptInstance::RacketScriptInstance(Ref<RacketScript> script, godot::Object* owner_object):
     script(script), owner_object(owner_object) {
-    SchemeLanguage::get_singleton()->get_binder()->initialize_instance(*this);
+    RacketLanguage::get_singleton()->get_binder()->initialize_instance(*this);
 }
 
 
-SchemeScriptInstance::~SchemeScriptInstance() {
+RacketScriptInstance::~RacketScriptInstance() {
     std::cout << "ssi dtor" << std::endl;
     if (script.is_valid() && owner_object) {
         uint64_t object_id = owner_object->get_instance_id();
         auto lock = script->language->get_instance_lock();
         script->instances.erase(object_id);
-        SchemeLanguage::get_singleton()->get_binder()->free_instance(*this);
+        RacketLanguage::get_singleton()->get_binder()->free_instance(*this);
     }
 }
 
 
-Ref<SchemeScript> SchemeScriptInstance::get_script() const {
+Ref<RacketScript> RacketScriptInstance::get_script() const {
     return script;
 }
 
 
-Variant SchemeScriptInstance::callp(
+Variant RacketScriptInstance::callp(
     const StringName &p_method,
     const Variant **p_args,
     int p_argcount,
-    SchemeCallError &r_error) {
-    return SchemeLanguage::get_singleton()->get_binder()->call(*this, p_method, p_args, p_argcount, &r_error);
+    RacketCallError &r_error) {
+    return RacketLanguage::get_singleton()->get_binder()->call(*this, p_method, p_args, p_argcount, &r_error);
 }
 
 
-bool SchemeScriptInstance::has_method(const StringName &p_method) const {
-    auto classDef = SchemeLanguage::get_singleton()->get_binder()->get_definition(*(get_script().ptr()));
+bool RacketScriptInstance::has_method(const StringName &p_method) const {
+    auto classDef = RacketLanguage::get_singleton()->get_binder()->get_definition(*(get_script().ptr()));
     if (classDef == nullptr) {
         return false;
     }
@@ -69,46 +69,46 @@ bool SchemeScriptInstance::has_method(const StringName &p_method) const {
 }
 
 
-void SchemeScriptInstance::notification(int p_notification) {
+void RacketScriptInstance::notification(int p_notification) {
     // TODO: collect error?
     const Variant* which = &Variant(p_notification);
-    SchemeLanguage::get_singleton()->get_binder()->call(*this, "_notification", &which, 1, NULL);
+    RacketLanguage::get_singleton()->get_binder()->call(*this, "_notification", &which, 1, NULL);
 }
 
 
-bool SchemeScriptInstance::set(const StringName &p_name, const Variant &p_value) {
-    return SchemeLanguage::get_singleton()->get_binder()->set(*this, p_name, p_value);
+bool RacketScriptInstance::set(const StringName &p_name, const Variant &p_value) {
+    return RacketLanguage::get_singleton()->get_binder()->set(*this, p_name, p_value);
 }
 
 
-bool SchemeScriptInstance::get(const StringName &p_name, Variant *r_ret) const {
-    return SchemeLanguage::get_singleton()->get_binder()->get(*this, p_name, r_ret);
+bool RacketScriptInstance::get(const StringName &p_name, Variant *r_ret) const {
+    return RacketLanguage::get_singleton()->get_binder()->get(*this, p_name, r_ret);
 }
 
-// TODO: cache values for property and method lists in SchemeScript instead
-void SchemeScriptInstance::get_property_list(List<PropertyInfo> *p_properties) const {
-    GDClassDefinition* def = SchemeLanguage::get_singleton()->get_binder()->get_definition(*this->script.ptr());
+// TODO: cache values for property and method lists in RacketScript instead
+void RacketScriptInstance::get_property_list(List<PropertyInfo> *p_properties) const {
+    GDClassDefinition* def = RacketLanguage::get_singleton()->get_binder()->get_definition(*this->script.ptr());
     for (int i = 0; i < def->properties.size(); i++) {
         p_properties->push_back((PropertyInfo)(def->properties[i]));
     }
 }
 
 
-void SchemeScriptInstance::get_method_list(List<MethodInfo> *p_methods) const {
-    GDClassDefinition* def = SchemeLanguage::get_singleton()->get_binder()->get_definition(*this->script.ptr());
+void RacketScriptInstance::get_method_list(List<MethodInfo> *p_methods) const {
+    GDClassDefinition* def = RacketLanguage::get_singleton()->get_binder()->get_definition(*this->script.ptr());
     for (auto iter : def->methods) {
         p_methods->push_back((MethodInfo)iter.value);
     }
 }
 
 
-Variant::Type SchemeScriptInstance::get_property_type(const StringName &p_name, bool *r_is_valid) const {
-    GDClassDefinition* def = SchemeLanguage::get_singleton()->get_binder()->get_definition(*this->script.ptr());
+Variant::Type RacketScriptInstance::get_property_type(const StringName &p_name, bool *r_is_valid) const {
+    GDClassDefinition* def = RacketLanguage::get_singleton()->get_binder()->get_definition(*this->script.ptr());
     return (Variant::Type)def->properties[def->property_indices[p_name]].property.type;
 }
 
 
-ScriptLanguage* SchemeScriptInstance::get_language() {
+ScriptLanguage* RacketScriptInstance::get_language() {
     return script->language;
 };
 
@@ -146,7 +146,7 @@ GDExtensionMethodInfo _convert_method_info(MethodInfo info) {
 }
 
 
-GDExtensionCallError _convert_call_err(SchemeCallError p_err) {
+GDExtensionCallError _convert_call_err(RacketCallError p_err) {
     GDExtensionCallError gde_err;
     gde_err.error = (GDExtensionCallErrorType)p_err.error;
     gde_err.argument = p_err.argument;
@@ -156,18 +156,18 @@ GDExtensionCallError _convert_call_err(SchemeCallError p_err) {
 
 
 GDExtensionObjectPtr s_get_script(GDExtensionScriptInstanceDataPtr void_this) {
-    auto script = ((reinterpret_cast<SchemeScriptInstance*>(void_this))->get_script());
+    auto script = ((reinterpret_cast<RacketScriptInstance*>(void_this))->get_script());
     return script.ptr();
 }
 
 
 void s_free(GDExtensionScriptInstanceDataPtr void_this) {
-    memdelete((SchemeScriptInstance*)void_this);
+    memdelete((RacketScriptInstance*)void_this);
 }
 
 
 GDExtensionBool s_has_method(GDExtensionScriptInstanceDataPtr p_instance, GDExtensionConstStringNamePtr p_name) {
-    return reinterpret_cast<SchemeScriptInstance*>(p_instance)->has_method(*reinterpret_cast<const StringName*>(p_name));
+    return reinterpret_cast<RacketScriptInstance*>(p_instance)->has_method(*reinterpret_cast<const StringName*>(p_name));
 }
 
 
@@ -182,8 +182,8 @@ void s_call(
     auto args = (const Variant**)p_args;
     auto method_name = *reinterpret_cast<const StringName*>(p_method);
     auto ret_ptr = reinterpret_cast<Variant*>(r_return);
-    SchemeCallError ret_err;
-    *ret_ptr = reinterpret_cast<SchemeScriptInstance*>(p_instance)->callp(
+    RacketCallError ret_err;
+    *ret_ptr = reinterpret_cast<RacketScriptInstance*>(p_instance)->callp(
         method_name, args, p_argument_count, ret_err);
     *r_error = _convert_call_err(ret_err);
 }
@@ -193,7 +193,7 @@ GDExtensionBool s_set(
     GDExtensionScriptInstanceDataPtr p_instance,
     GDExtensionConstStringNamePtr p_name,
     GDExtensionConstVariantPtr p_value) {
-    return reinterpret_cast<SchemeScriptInstance*>(p_instance)->set(
+    return reinterpret_cast<RacketScriptInstance*>(p_instance)->set(
         *reinterpret_cast<const StringName*>(p_name),
         *reinterpret_cast<const Variant*>(p_value));
 }
@@ -203,7 +203,7 @@ GDExtensionBool s_get(
     GDExtensionConstStringNamePtr p_name,
     GDExtensionVariantPtr r_ret) {
     auto ret = reinterpret_cast<Variant*>(r_ret);
-    return reinterpret_cast<SchemeScriptInstance*>(p_instance)->get(
+    return reinterpret_cast<RacketScriptInstance*>(p_instance)->get(
         *reinterpret_cast<const StringName*>(p_name), ret
     );
 }
@@ -214,7 +214,7 @@ const GDExtensionPropertyInfo* s_get_property_list(
     uint32_t *r_count) {
 
     List<PropertyInfo> prop_info;
-    reinterpret_cast<SchemeScriptInstance*>(p_instance)->get_property_list(&prop_info);
+    reinterpret_cast<RacketScriptInstance*>(p_instance)->get_property_list(&prop_info);
     int count = prop_info.size();
     GDExtensionPropertyInfo* gde_info = (GDExtensionPropertyInfo*) std::malloc( sizeof(GDExtensionPropertyInfo));
     for (int i = 0; i < count; i++) {
@@ -236,28 +236,28 @@ GDExtensionVariantType s_get_property_type(
 
     auto prop_name = *reinterpret_cast<const StringName*>(p_name);
     auto is_valid = reinterpret_cast<bool*>(r_is_valid);
-    auto prop_type = reinterpret_cast<SchemeScriptInstance*>(p_instance)->get_property_type(prop_name, is_valid);
+    auto prop_type = reinterpret_cast<RacketScriptInstance*>(p_instance)->get_property_type(prop_name, is_valid);
     return (GDExtensionVariantType)prop_type;
 }
 
 
 void s_notification(GDExtensionScriptInstanceDataPtr p_instance, int32_t p_what) {
-    reinterpret_cast<SchemeScriptInstance*>(p_instance)->notification(p_what);
+    reinterpret_cast<RacketScriptInstance*>(p_instance)->notification(p_what);
 }
 
 GDExtensionScriptLanguagePtr s_get_language(GDExtensionScriptInstanceDataPtr p_instance) {
-    return reinterpret_cast<SchemeScriptInstance*>(p_instance)->get_language();
+    return reinterpret_cast<RacketScriptInstance*>(p_instance)->get_language();
 }
 
 
 GDExtensionObjectPtr s_get_owner(GDExtensionScriptInstanceDataPtr p_instance) {
-    return reinterpret_cast<SchemeScriptInstance*>(p_instance)->get_owner();
+    return reinterpret_cast<RacketScriptInstance*>(p_instance)->get_owner();
 }
 
 
 const GDExtensionMethodInfo* s_get_method_list(GDExtensionScriptInstanceDataPtr p_instance, uint32_t *r_count) {
     List<MethodInfo> p_list;
-    reinterpret_cast<SchemeScriptInstance*>(p_instance)->get_method_list(&p_list);
+    reinterpret_cast<RacketScriptInstance*>(p_instance)->get_method_list(&p_list);
 
     auto sz = (p_list.size());
     GDExtensionMethodInfo* m_info = (GDExtensionMethodInfo*) std::malloc(sz * sizeof(GDExtensionMethodInfo));
@@ -331,4 +331,4 @@ GDExtensionScriptInstanceInfo init_instance_info() {
     return instance_info;
 }
 
-GDExtensionScriptInstanceInfo SchemeScriptInstance::instance_info = init_instance_info();
+GDExtensionScriptInstanceInfo RacketScriptInstance::instance_info = init_instance_info();
