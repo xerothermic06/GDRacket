@@ -23,7 +23,8 @@ class SchemeScriptInstance {
     Ref<SchemeScript> script;
     // Godot object this instance is attached to
     godot::Object* owner_object;
-
+    // Scheme object for this instance
+    void* scheme_object;
 
 public:
     explicit SchemeScriptInstance(Ref<SchemeScript> script,
@@ -31,6 +32,14 @@ public:
     ~SchemeScriptInstance();
 
     static GDExtensionScriptInstancePtr create_instance(const SchemeScript* parent, godot::Object* host_object);
+
+    void* get_scheme_object() {
+        return scheme_object;
+    }
+
+    void set_scheme_object(void* p_ptr) {
+        scheme_object = p_ptr;
+    }
 
 	virtual bool set(const StringName &p_name, const Variant &p_value);
 	virtual bool get(const StringName &p_name, Variant *r_ret) const;

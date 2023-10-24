@@ -140,7 +140,7 @@ private:
         wrapper_to_variant<Scheme_Projection>,
         wrapper_to_variant<Scheme_Color>,
 
-        [](Scheme_Object* obj)->Variant { return Variant(rktstr2gdstr(obj)); },
+        [](Scheme_Object* obj)->Variant { return Variant(rktsym2gdstrname(obj)); },
         [](Scheme_Object* obj)->Variant { return Variant(NodePath(rktstr2gdstr(obj))); },
         wrapper_to_variant<Scheme_RID>,
         wrapper_to_variant<Scheme_GodotObject>,
@@ -186,7 +186,7 @@ private:
         variant_to_wrapper<Scheme_Projection,  Projection>,
         variant_to_wrapper<Scheme_Color,       Color>,
 
-        [](const Variant& v)->Scheme_Object* { return gdstrname2rktstr(((StringName)v)); },
+        [](const Variant& v)->Scheme_Object* { return gdstrname2rktsym(((StringName)v)); },
         [](const Variant& v)->Scheme_Object* { return gdstr2rktstr(((String)v)); },
         variant_to_wrapper<Scheme_RID, RID>,
         variant_to_wrapper<Scheme_GodotObject, Object*>,

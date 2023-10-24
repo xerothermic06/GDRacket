@@ -1,17 +1,25 @@
 #lang racket
-; TODO: contracts for procs
+; Root Godot interface module to require from script classes.
+
 (require
-  racket/base
-  racket/exn
-  (prefix-in ffi: ffi/unsafe)
-  (prefix-in gdp: 'gd-primitive))
+  (for-syntax syntax/parse)
+  racket/exn)
 
 
-(define-syntax (defprovide stx)
-  (let* ([stx-list (syntax->list stx)]
-         [sym (cadr stx-list)]
-         [expr (caddr stx-list)])
-  (datum->syntax stx `(begin (define ,sym ,expr) (provide ,sym)))))
+(define-syntax (require-provide-all-out stx)
+  (syntax-parse stx
+    [(require-provide-all-out module-res:expr)
+      #'(begin (require module-res) (provide (all-from-out module-res)))]))
+
+
+; TODO: contracts for procs
+(require-provide-all-out "./gd-script-classes.rkt")
+(require-provide-all-out "./gd-builtins.rkt")
+(require-provide-all-out "./gd-native-interface.rkt")
+(require-provide-all-out "./gd-util.rkt")
+
+(define (get-gdprimitive-proc proc-symbol)
+  (dynamic-require ''gd-primitive proc-symbol))
 
 
 (define-syntax def-gd
@@ -20,125 +28,17 @@
     [(provide-gd (struct id rest ...)) (begin (provide (struct-out id)) (struct id rest ...)) ]))
 
 
-(define-syntax-rule (values->list EXPR)
-  (call-with-values (λ () EXPR) list))
+(def-gd print (λ ... (displayln ...) (flush-output)))
 
 
-(def-gd (struct prop (name type) #:mutable #:transparent #:reflection-name 'prop))
-(def-gd (struct method (name return-type arguments) #:mutable #:transparent #:reflection-name 'method))
-(def-gd (struct class (name methods properties) #:mutable #:transparent #:reflection-name 'class))
+(def-gd push-error (λ ...
+  ((get-gdprimitive-proc 'push-error) (apply string-append ...))))
 
 
-(def-gd print
-  (λ ... (displayln ...) (flush-output)))
-
-
-(def-gd push-error
-  (λ ... (gdp:push-error (apply string-append ...))))
-
-
-(def-gd push-exn
-  (λ (exn (message "")) (gdp:push-error (string-append message (exn->string exn)))))
+(def-gd push-exn (λ (exn (message ""))
+  ((get-gdprimitive-proc 'push-error) (string-append message (exn->string exn)))))
 
 
 (def-gd invoke
   (lambda (obj method-name arg-list)
       (apply dynamic-send obj method-name arg-list)))
-
-
-; (def-gd object?
-;   (lambda (obj)
-;     ; (displayln "get object")
-;     (and
-;       (ffi:cpointer? obj)
-;       (ffi:cpointer-has-tag? obj 'object))))
-
-
-; (def-gd variant?
-;   (lambda (obj)
-;   ; (displayln "get variant")
-;     (and
-;       (ffi:cpointer? obj)
-;       (ffi:cpointer-has-tag? obj 'variant))))
-
-
-(define setget-target/c (or/c gdp:object? object?))
-(define setget-index/c (or/c symbol? integer?))
-; (define get-return/c (or/c variant? null?))
-
-
-(provide (contract-out
-  [get (-> setget-target/c setget-index/c any)]))
-(define get
-  (lambda (obj-or-vnt nm)
-    (displayln (format "get: ~a ~a ~a" obj-or-vnt (gdp:object? obj-or-vnt) nm))
-    (flush-output)
-    (cond [(gdp:object? obj-or-vnt)
-      (if (integer? nm)
-        (gdp:geti obj-or-vnt nm)
-        (gdp:call obj-or-vnt "get" (symbol->string nm)))])))
-      ; [(variant? obj-or-vnt)
-          ; (gdp:call obj-or-vnt "get" (symbol->string nm)))])))
-
-
-(provide (contract-out
-  [set (-> setget-target/c setget-index/c any/c boolean?)]))
-(define set
-  (lambda (obj-or-vnt nm valu)
-    (displayln (format "get: ~a ~a ~a" obj-or-vnt (gdp:object? obj-or-vnt) nm))
-    (flush-output)
-    (cond
-      ; [(object? obj-or-vnt)
-      ;   (gdp:object-call obj-or-vnt "set" (symbol->string nm) valu)]
-      [(gdp:object? obj-or-vnt)
-        (if (integer? nm)
-          (gdp:seti! obj-or-vnt nm valu)
-          (gdp:call obj-or-vnt "set" (symbol->string nm) valu))])
-      #f))
-
-
-(def-gd Input
-  (gdp:get-singleton "Input"))
-
-
-; TODO: Parameterize these maybe?
-(def-gd type:nil 0)
-(def-gd type:bool 1)
-(def-gd type:int 2)
-(def-gd type:float 3)
-(def-gd type:string 4)
-(def-gd type:vector2 5)
-(def-gd type:vector2i 6)
-(def-gd type:rect2 7)
-(def-gd type:rect2i 8)
-(def-gd type:vector3 9)
-(def-gd type:vector3i 10)
-(def-gd type:transform2d 11)
-(def-gd type:vector4 12)
-(def-gd type:vector4i 13)
-(def-gd type:plane 14)
-(def-gd type:quaternion 15)
-(def-gd type:aabb 16)
-(def-gd type:basis 17)
-(def-gd type:transform3d 18)
-(def-gd type:projection 19)
-(def-gd type:color 20)
-(def-gd type:string-name 21)
-(def-gd type:node-path 22)
-(def-gd type:rid 23)
-(def-gd type:object 24)
-(def-gd type:callable 25)
-(def-gd type:signal 26)
-(def-gd type:dictionary 27)
-(def-gd type:array 28)
-(def-gd type:packed-byte-array 29)
-(def-gd type:packed-int32-array 30)
-(def-gd type:packed-int64-array 31)
-(def-gd type:packed-float32-array 32)
-(def-gd type:packed-float64-array 33)
-(def-gd type:packed-string-array 34)
-(def-gd type:packed-vector2-array 35)
-(def-gd type:packed-vector3-array 36)
-(def-gd type:packed-color-array 37)
-(def-gd type:variant-max 38)
-

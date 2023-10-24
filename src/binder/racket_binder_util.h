@@ -60,6 +60,7 @@ Scheme_Object* rkt_list(T... ts) {
 // Make a Racket UTF-8 string from a Godot string
 #define gdstr2rktstr(x) scheme_make_utf8_string(x.utf8().get_data())
 #define gdstrname2rktstr(x) scheme_make_utf8_string(String(x).utf8().get_data())
+#define gdstrname2rktsym(x) scheme_intern_symbol(String(x).utf8().get_data())
 #define gdstr2charp(x) (x.utf8().get_data())
 
 // TODO: figure out how to make this work if some platform has an `unsigned int`

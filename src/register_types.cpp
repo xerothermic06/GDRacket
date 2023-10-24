@@ -9,7 +9,6 @@
 
 #include "scheme_language.h"
 #include "scheme_script.h"
-#include "binder/racket_binder.h"
 
 #include <cstdio>
 

@@ -14,7 +14,7 @@ SchemeLanguage* SchemeLanguage::singleton;
 
 SchemeLanguage::SchemeLanguage() {
     singleton = this;
-    binder = memnew(RacketBinder());
+    binder = RacketBinder::get_singleton(); //memnew(RacketBinder());
     instance_lock.instantiate();
 }
 

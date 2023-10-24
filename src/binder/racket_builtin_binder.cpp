@@ -1,4 +1,5 @@
 #include "./racket_builtin_binder.h"
+#include "./racket_binder_util.h"
 
 // Storage for Scheme_Type ids
 Scheme_Type Scheme_Vector2::scheme_type = 0;

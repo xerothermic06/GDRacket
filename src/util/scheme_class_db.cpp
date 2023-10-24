@@ -2,7 +2,7 @@
 #include <godot_cpp/classes/engine.hpp>
 
 #include "scheme_class_db.h"
-
+#include "../binder/racket_binder_util.h"
 // Compensates for ClassDB methods not exposed to GDExtension. May be a better way of doing this
 
 Object* SchemeClassDB::class_db;
@@ -10,8 +10,10 @@ Object* SchemeClassDB::class_db;
 Object* SchemeClassDB::get_class_db() {
     if (class_db == nullptr) {
         StringName classdb_name = "ClassDB";
-        class_db = (Object*)godot::internal::gdextension_interface_global_get_singleton(&classdb_name);
+        class_db = Engine::get_singleton()->get_singleton("ClassDB"); //(Object*)godot::internal::gdextension_interface_global_get_singleton(&classdb_name);
+        _debug_logln("{0}", class_db);
     }
+
     return class_db;
 }
 
@@ -32,4 +34,19 @@ bool SchemeClassDB::is_parent_class(const StringName &p_class_name, const String
 
 StringName SchemeClassDB::get_parent_class(const StringName &p_class_name) {
     return get_class_db()->call("get_parent_class", p_class_name);
+}
+
+
+Array SchemeClassDB::class_get_property_list(const StringName &p_class_name) {
+    return get_class_db()->call("class_get_property_list", p_class_name);
+}
+
+
+Array SchemeClassDB::class_get_method_list(const StringName &p_class_name) {
+    return get_class_db()->call("class_get_method_list", p_class_name);
+}
+
+
+Object* SchemeClassDB::instantiate(const StringName &p_class_name) {
+    return get_class_db()->call("instantiate", p_class_name);
 }
