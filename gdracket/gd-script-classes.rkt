@@ -2,45 +2,85 @@
 
 (require (for-syntax syntax/parse))
 (require (prefix-in gdp: "./gd-native-interface.rkt"))
+(require "./gd-object-base.rkt")
+(require "./gd-util.rkt")
 
 ; Script class components ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; base class for all Racket scripts.
-(provide godot-object-base)
-(define godot-object-base
-  (class object%
-    (super-new)
-    ; Scheme_GodotObject* which points to the owning Godot object
-    (field (object-ptr (void)))
-    (define/public (delegate-invoke mthd args ...)
-      (gdp:call object-ptr mthd args))))
-
 
 (define (any->symbol arg) (string->symbol (format "~a" arg)))
+
+
+; Generate an s-expression for a Godot wrapper class based on a dictionary with
+; the class' info.
+(provide class-info->class-expression)
+(define (class-info->class-expression info-dict)
+  (begin
+    (define class-properties (hash-ref info-dict 'properties '()))
+    (define class-methods (hash-ref info-dict 'methods '()))
+    (define super-class-object
+      (_get-api-class (any->symbol (hash-ref info-dict 'parent))))
+
+    (define method-clauses
+      (for/list ([method-hash class-methods])
+        (define method-name (any->symbol (hash-ref method-hash "name")))
+        (define arglist
+          (for/list ([arg-hash (hash-ref method-hash "args" '())]) (any->symbol (hash-ref arg-hash "name"))))
+        `(define/public (,method-name ,@arglist) (delegate-invoke ',method-name ,@arglist))))
+
+    (define field-clauses
+      (for/list ([prop-hash class-properties])
+        `(field (,(any->symbol (hash-ref prop-hash "name")) '()))))
+
+    `(class ,super-class-object (super-new) ,@field-clauses ,@method-clauses)))
+
+
+; When true, class wrappers for builtin Godot types will be generated dynamically;
+; otherwise, they will be required from gd-class-api.
+(define dynamic-wrapper-classes (make-parameter #t))
 
 ; Gets a class that wraps a builtin Godot type based on its exports. These definitions are
 ; generated dynamically and cached on subsequent calls.
 (provide get-api-class)
 (define (get-api-class class-name-symbol)
-  (define result (gdp:app->result (_get-api-class class-name-symbol)))
-  (cond [(car result) (cdr result)] [else (void)]))
+  (cond
+    [dynamic-wrapper-classes
+     (define result (gdp:app->result (_get-api-class class-name-symbol)))
+     (log/info result)
+     (cond [(car result) (cdr result)] [else (void)])]
+    [else
+     (dynamic-require "./gd-class-api.rkt" class-name-symbol)]))
+
 
 (define api-class-store (make-hash))
 (define (_get-api-class class-name-symbol)
+  (log/info class-name-symbol)
+  (log/info (hash-has-key? api-class-store class-name-symbol))
   (cond
-    [(equal? class-name-symbol 'Object)
-     godot-object-base]
-    
+
     [(hash-has-key? api-class-store class-name-symbol)
      (hash-ref api-class-store class-name-symbol)]
     
     [else
      (define info-dict
        ((dynamic-require ''gd-primitive 'get-api-class-info) class-name-symbol))
+
      (define class-properties (hash-ref info-dict 'properties '()))
      (define class-methods (hash-ref info-dict 'methods '()))
+     
+     (log/info class-name-symbol (for/list ([method-hash class-methods]) (hash-ref method-hash "name")))
+     
      (define super-class-object
-       (_get-api-class (any->symbol (hash-ref info-dict 'parent))))
+       (let ([super-class-name (hash-ref info-dict 'parent (void))])
+         (begin
+           (log/info class-name-symbol "extends" super-class-name)
+           (cond
+             [(or (equal? class-name-symbol 'Object) (void? super-class-name)) godot-object-base]
+             [else (_get-api-class (any->symbol super-class-name))]))))
+
+;     (log/info (format "class name ~a superclass ~a" (hash-ref info-dict 'parent (void)) super-class-object))
+     
+;       (_get-api-class (any->symbol (hash-ref info-dict 'parent))))
 
      (define method-clauses
        (for/list ([method-hash class-methods])
@@ -50,16 +90,15 @@
          `(define/public (,method-name ,@arglist) (delegate-invoke ',method-name ,@arglist))))
 
      (define field-clauses
-       (for/fold ([clauses '()]) ([prop-hash class-properties])
+       (for/list ([prop-hash class-properties])
          `(field (,(any->symbol (hash-ref prop-hash "name")) '()))))
-
+     
      (define api-class-wrapper
        (let ([wrapper-expr `(class ,super-class-object (super-new) ,@field-clauses ,@method-clauses)])
-;         (displayln wrapper-expr) (flush-output)
          (eval wrapper-expr)))
-
+     
      (hash-set! api-class-store class-name-symbol api-class-wrapper)
-
+     
      api-class-wrapper]))
 
 
@@ -365,8 +404,8 @@
                (provide ,class-info-name)
                (define ,class-info-name ,metadata-hash)))]) ;,(syntax->datum class-metas-name-syntax))))])
 
-       (displayln class-info-expr)
-       
+       (displayln metadata-hash) (flush-output)
+
        #`(begin #,class-expr #,class-info-expr))]))
 
 

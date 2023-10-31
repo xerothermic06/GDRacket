@@ -17,8 +17,10 @@ template<typename... T>
 Array array_of(T... ts) {
     Array arr;
     const int size = sizeof...(ts);
-    static_assert(size > 0);
-    Variant els[size] = { ts... };
+    if (size == 0) {
+        return arr;
+    }
+    Variant els[size > 0 ? size : 1] = { ts... };
     for (int i = 0; i < size; i++) {
         arr.append(els[i]);
     }
@@ -27,15 +29,25 @@ Array array_of(T... ts) {
 
 
 template <typename... T>
-void _debug_logln(String msg, T... ts) {
+String _string_fmt(String msg, T... ts) {
     const int size = sizeof...(ts);
     if (size == 0) {
-        std::cout << msg.utf8().get_data() << std::endl;
+        return msg.utf8().get_data();
+    }
+    Array arr = array_of(ts...);
+    return msg.format(arr).utf8().get_data();
+}
+
+
+template <typename... T>
+void _debug_logln(String msg, T... ts) {
+    if (sizeof...(ts) > 0) {
+        std::cout << _string_fmt(msg, ts...).utf8().get_data() << std::endl;
     } else {
-        Array arr = array_of(ts...);
-        std::cout << msg.format(arr).utf8().get_data() << std::endl;
+        std::cout << msg.utf8().get_data() << std::endl;
     }
 }
+
 
 // Builds a list of Racket objects from varargs
 template<typename... T>
@@ -68,12 +80,7 @@ Scheme_Object* rkt_list(T... ts) {
 #define rktstr2gdstr(x) String((const char32_t*)SCHEME_CHAR_STR_VAL(x))
 #define rktstr2gdstrname(x) StringName((const char32_t*)SCHEME_CHAR_STR_VAL(x))
 #define rktsym2gdstrname(x) StringName(SCHEME_SYM_VAL(x))
-#define rkt_eval(...) scheme_eval(rkt_list(__VA_ARGS__), root_scheme_env)
-#define rkt_eval_string(str) scheme_eval_string(str, root_scheme_env)
-#define rkt_eval_handle(...) scheme_eval(rkt_list(rkt_sym("eval-handle"), rkt_quote(rkt_list(__VA_ARGS__))), root_scheme_env)
 
-Scheme_Object* gd_obj2rkt_obj(const Variant* v);
-Variant rkt_obj2gd_obj(Scheme_Object* obj);
 Scheme_Object* rkt_make_gd_string(int argc, Scheme_Object** argv);
 Scheme_Object* rkt_make_gd_stringname(int argc, Scheme_Object** argv);
 

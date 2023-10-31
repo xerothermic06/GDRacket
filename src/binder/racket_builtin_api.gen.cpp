@@ -4,7 +4,7 @@
 using namespace godot;
 
 static Scheme_Object* Scheme_Vector2_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Vector2* obj = binder->new_builtin_instance<Scheme_Vector2>();
@@ -33,7 +33,7 @@ static Scheme_Object* Scheme_Vector2_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Vector2i_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Vector2i* obj = binder->new_builtin_instance<Scheme_Vector2i>();
@@ -62,7 +62,7 @@ static Scheme_Object* Scheme_Vector2i_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Rect2_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Rect2* obj = binder->new_builtin_instance<Scheme_Rect2>();
@@ -97,7 +97,7 @@ static Scheme_Object* Scheme_Rect2_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Rect2i_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Rect2i* obj = binder->new_builtin_instance<Scheme_Rect2i>();
@@ -132,7 +132,7 @@ static Scheme_Object* Scheme_Rect2i_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Vector3_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Vector3* obj = binder->new_builtin_instance<Scheme_Vector3>();
@@ -161,7 +161,7 @@ static Scheme_Object* Scheme_Vector3_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Vector3i_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Vector3i* obj = binder->new_builtin_instance<Scheme_Vector3i>();
@@ -190,7 +190,7 @@ static Scheme_Object* Scheme_Vector3i_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Transform2D_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Transform2D* obj = binder->new_builtin_instance<Scheme_Transform2D>();
@@ -225,7 +225,7 @@ static Scheme_Object* Scheme_Transform2D_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Vector4_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Vector4* obj = binder->new_builtin_instance<Scheme_Vector4>();
@@ -254,7 +254,7 @@ static Scheme_Object* Scheme_Vector4_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Vector4i_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Vector4i* obj = binder->new_builtin_instance<Scheme_Vector4i>();
@@ -283,7 +283,7 @@ static Scheme_Object* Scheme_Vector4i_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Plane_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Plane* obj = binder->new_builtin_instance<Scheme_Plane>();
@@ -330,7 +330,7 @@ static Scheme_Object* Scheme_Plane_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Quaternion_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Quaternion* obj = binder->new_builtin_instance<Scheme_Quaternion>();
@@ -371,7 +371,7 @@ static Scheme_Object* Scheme_Quaternion_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_AABB_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_AABB* obj = binder->new_builtin_instance<Scheme_AABB>();
@@ -394,7 +394,7 @@ static Scheme_Object* Scheme_AABB_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Basis_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Basis* obj = binder->new_builtin_instance<Scheme_Basis>();
@@ -429,7 +429,7 @@ static Scheme_Object* Scheme_Basis_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Transform3D_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Transform3D* obj = binder->new_builtin_instance<Scheme_Transform3D>();
@@ -464,7 +464,7 @@ static Scheme_Object* Scheme_Transform3D_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Projection_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Projection* obj = binder->new_builtin_instance<Scheme_Projection>();
@@ -493,7 +493,7 @@ static Scheme_Object* Scheme_Projection_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Color_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Color* obj = binder->new_builtin_instance<Scheme_Color>();
@@ -540,7 +540,7 @@ static Scheme_Object* Scheme_Color_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_RID_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_RID* obj = binder->new_builtin_instance<Scheme_RID>();
@@ -557,7 +557,7 @@ static Scheme_Object* Scheme_RID_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Callable_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Callable* obj = binder->new_builtin_instance<Scheme_Callable>();
@@ -580,7 +580,7 @@ static Scheme_Object* Scheme_Callable_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Signal_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Signal* obj = binder->new_builtin_instance<Scheme_Signal>();
@@ -603,7 +603,7 @@ static Scheme_Object* Scheme_Signal_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Dictionary_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Dictionary* obj = binder->new_builtin_instance<Scheme_Dictionary>();
@@ -620,7 +620,7 @@ static Scheme_Object* Scheme_Dictionary_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_Array_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_Array* obj = binder->new_builtin_instance<Scheme_Array>();
@@ -697,7 +697,7 @@ static Scheme_Object* Scheme_Array_ctor(int argc, Scheme_Object** argv) {
 }
 
 static Scheme_Object* Scheme_PackedByteArray_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_PackedByteArray* obj = binder->new_builtin_instance<Scheme_PackedByteArray>();
@@ -720,7 +720,7 @@ static Scheme_Object* Scheme_PackedByteArray_ctor(int argc, Scheme_Object** argv
 }
 
 static Scheme_Object* Scheme_PackedInt32Array_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_PackedInt32Array* obj = binder->new_builtin_instance<Scheme_PackedInt32Array>();
@@ -743,7 +743,7 @@ static Scheme_Object* Scheme_PackedInt32Array_ctor(int argc, Scheme_Object** arg
 }
 
 static Scheme_Object* Scheme_PackedInt64Array_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_PackedInt64Array* obj = binder->new_builtin_instance<Scheme_PackedInt64Array>();
@@ -766,7 +766,7 @@ static Scheme_Object* Scheme_PackedInt64Array_ctor(int argc, Scheme_Object** arg
 }
 
 static Scheme_Object* Scheme_PackedFloat32Array_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_PackedFloat32Array* obj = binder->new_builtin_instance<Scheme_PackedFloat32Array>();
@@ -789,7 +789,7 @@ static Scheme_Object* Scheme_PackedFloat32Array_ctor(int argc, Scheme_Object** a
 }
 
 static Scheme_Object* Scheme_PackedFloat64Array_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_PackedFloat64Array* obj = binder->new_builtin_instance<Scheme_PackedFloat64Array>();
@@ -812,7 +812,7 @@ static Scheme_Object* Scheme_PackedFloat64Array_ctor(int argc, Scheme_Object** a
 }
 
 static Scheme_Object* Scheme_PackedStringArray_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_PackedStringArray* obj = binder->new_builtin_instance<Scheme_PackedStringArray>();
@@ -835,7 +835,7 @@ static Scheme_Object* Scheme_PackedStringArray_ctor(int argc, Scheme_Object** ar
 }
 
 static Scheme_Object* Scheme_PackedVector2Array_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_PackedVector2Array* obj = binder->new_builtin_instance<Scheme_PackedVector2Array>();
@@ -858,7 +858,7 @@ static Scheme_Object* Scheme_PackedVector2Array_ctor(int argc, Scheme_Object** a
 }
 
 static Scheme_Object* Scheme_PackedVector3Array_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_PackedVector3Array* obj = binder->new_builtin_instance<Scheme_PackedVector3Array>();
@@ -881,7 +881,7 @@ static Scheme_Object* Scheme_PackedVector3Array_ctor(int argc, Scheme_Object** a
 }
 
 static Scheme_Object* Scheme_PackedColorArray_ctor(int argc, Scheme_Object** argv) {
-    BuiltinBinder* binder = BuiltinBinder::get_singleton();
+    RacketBCBuiltinBinder* binder = RacketBCBuiltinBinder::get_singleton();
 
     if (argc == 0) {
         Scheme_PackedColorArray* obj = binder->new_builtin_instance<Scheme_PackedColorArray>();

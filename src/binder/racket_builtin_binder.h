@@ -2,6 +2,7 @@
 #define RACKET_BUILTIN_BINDER_H
 
 #include "binder/racket_binder_util.h"
+#include "racket_language.h"
 
 #include "scheme.h"
 
@@ -46,17 +47,22 @@ struct Scheme_GDObject {
 
 // generates predicates to check if given Scheme_Object is an instance of a builtin type
 template <typename T>
-Scheme_Object* gdobject_isp(int argc, Scheme_Object** argv) {
-    return sizeof(*argv[0]) == sizeof(T) && ((T*)argv[0])->header.variant_type == T::wrapper_variant_type ? scheme_true : scheme_false; // SCHEME_TYPE(argv[0]) == T::type_id ? scheme_true : scheme_false;
+Scheme_Object *gdobject_isp(int argc, Scheme_Object **argv) {
+    static Scheme_Object *res[] = {scheme_true, scheme_false};
+    bool pred = sizeof(*argv[0]) == sizeof(T) &&
+                   ((T *)argv[0])->header.variant_type ==
+                       T::wrapper_variant_type;
+    return res[pred];
 }
 
 
 // generates functions to convert Variant -> Scheme_Object
-template<typename GDObjectType, typename BuiltinType>
-Scheme_Object* variant_to_wrapper(const Variant& arg) {
-    GDObjectType* scheme_gd_object = BuiltinBinder::get_singleton()->new_builtin_instance<GDObjectType>();
+template <typename GDObjectType, typename BuiltinType>
+Scheme_Object *variant_to_wrapper(const Variant &arg) {
+    GDObjectType *scheme_gd_object = RacketBCBuiltinBinder::get_singleton()
+                                         ->new_builtin_instance<GDObjectType>();
     scheme_gd_object->v = (BuiltinType)arg;
-    return reinterpret_cast<Scheme_Object*>(scheme_gd_object);
+    return reinterpret_cast<Scheme_Object *>(scheme_gd_object);
 }
 
 
@@ -102,26 +108,45 @@ typedef struct Scheme_PackedVector3Array : Scheme_GDObject<PackedVector3Array, V
 typedef struct Scheme_PackedColorArray   : Scheme_GDObject<PackedColorArray,   Variant::Type::PACKED_COLOR_ARRAY>   {} Scheme_PackedColorArray;
 
 
-typedef Scheme_Object* (*BuiltinToWrapper)(const Variant& v);
-typedef Variant (*WrapperToBuiltin)(Scheme_Object* v);
+typedef Scheme_Object *(*VariantToSchemeObject)(const Variant &v);
+typedef Variant (*SchemeObjectToVariant)(Scheme_Object *v);
 
+
+class RacketCallableCustomMethodPointer
+    : public CallableCustomMethodPointerBase {
+  private:
+    static HashMap<Scheme_Object *, RacketCallableCustomMethodPointer>
+        callable_map;
+
+    Object *instance;
+    Scheme_Object *procedure;
+
+  public:
+    Object *get_object() const override { return instance; };
+    void call(const Variant **p_arguments, int p_argcount,
+              Variant &r_return_value,
+              GDExtensionCallError &r_call_error) const override;
+    RacketCallableCustomMethodPointer(Object *p_instance,
+                                      Scheme_Object *p_proc);
+    ~RacketCallableCustomMethodPointer() override;
+};
 
 // Singleton that converts between builtin Godot struct values and Racket values.
-class BuiltinBinder {
+class RacketBCBuiltinBinder {
 private:
-    static BuiltinBinder* singleton;
+    static RacketBCBuiltinBinder *singleton;
 
     // Scheme_Type range associated with builtin wrappers.
     Scheme_Type builtin_scheme_type_min;
     Scheme_Type builtin_scheme_type_max;
 
     // Functions to convert from builtin wrappers to Variants.
-    WrapperToBuiltin wrapper_to_builtin_funcs[Variant::Type::VARIANT_MAX] = {
-        [](Scheme_Object* obj)->Variant { return Variant(); },
-        [](Scheme_Object* obj)->Variant { return Variant(SCHEME_TRUEP(obj)); },
-        [](Scheme_Object* obj)->Variant { return Variant(SCHEME_INT_VAL(obj)); },
-        [](Scheme_Object* obj)->Variant { return Variant(SCHEME_FLOAT_VAL(obj)); },
-        [](Scheme_Object* obj)->Variant { return rktstr2gdstr(obj); },
+    SchemeObjectToVariant scheme_object_to_variant_funcs[Variant::Type::VARIANT_MAX] = {
+        [](Scheme_Object *obj)->Variant { return Variant(); },
+        [](Scheme_Object *obj)->Variant { return Variant(SCHEME_TRUEP(obj)); },
+        [](Scheme_Object *obj)->Variant { return Variant(SCHEME_INT_VAL(obj)); },
+        [](Scheme_Object *obj)->Variant { return Variant(SCHEME_FLOAT_VAL(obj)); },
+        [](Scheme_Object *obj)->Variant { return rktstr2gdstr(obj); },
 
         wrapper_to_variant<Scheme_Vector2>,
         wrapper_to_variant<Scheme_Vector2i>,
@@ -140,11 +165,17 @@ private:
         wrapper_to_variant<Scheme_Projection>,
         wrapper_to_variant<Scheme_Color>,
 
-        [](Scheme_Object* obj)->Variant { return Variant(rktsym2gdstrname(obj)); },
-        [](Scheme_Object* obj)->Variant { return Variant(NodePath(rktstr2gdstr(obj))); },
+        [](Scheme_Object *obj)->Variant { return Variant(rktsym2gdstrname(obj)); },
+        [](Scheme_Object *obj)->Variant { return Variant(NodePath(rktstr2gdstr(obj))); },
         wrapper_to_variant<Scheme_RID>,
         wrapper_to_variant<Scheme_GodotObject>,
-        wrapper_to_variant<Scheme_Callable>,
+        // wrapper_to_variant<Scheme_Callable>,
+        [](Scheme_Object *obj) -> Variant {
+            // if (SCHEME_PROCP(obj)) {
+            //     return RacketProcedureAnchor::wrap_procedure(obj);
+            // }
+            return wrapper_to_variant<Scheme_Callable>(obj);
+        },
         wrapper_to_variant<Scheme_Signal>,
 
         wrapper_to_variant<Scheme_Dictionary>,
@@ -162,12 +193,12 @@ private:
     };
 
     // Functions to convert from Variants to builtin wrappers.
-    BuiltinToWrapper builtin_to_wrapper_funcs[Variant::Type::VARIANT_MAX] = {
-        [](const Variant& v)->Scheme_Object* { return scheme_null; },
-        [](const Variant& v)->Scheme_Object* { return (bool)v ? scheme_true : scheme_false; },
-        [](const Variant& v)->Scheme_Object* { return scheme_make_integer((uint32_t)v); },
-        [](const Variant& v)->Scheme_Object* { return scheme_make_float((float)v); },
-        [](const Variant& v)->Scheme_Object* { return gdstr2rktstr(((String)v)); },
+    VariantToSchemeObject variant_to_scheme_object_funcs[Variant::Type::VARIANT_MAX] = {
+        [](const Variant &v)->Scheme_Object * { return scheme_null; },
+        [](const Variant &v)->Scheme_Object * { return (bool)v ? scheme_true : scheme_false; },
+        [](const Variant &v)->Scheme_Object * { return scheme_make_integer((uint32_t)v); },
+        [](const Variant &v)->Scheme_Object * { return scheme_make_float((float)v); },
+        [](const Variant &v)->Scheme_Object * { return gdstr2rktstr(((String)v)); },
 
         variant_to_wrapper<Scheme_Vector2,     Vector2>,
         variant_to_wrapper<Scheme_Vector2i,    Vector2i>,
@@ -186,8 +217,8 @@ private:
         variant_to_wrapper<Scheme_Projection,  Projection>,
         variant_to_wrapper<Scheme_Color,       Color>,
 
-        [](const Variant& v)->Scheme_Object* { return gdstrname2rktsym(((StringName)v)); },
-        [](const Variant& v)->Scheme_Object* { return gdstr2rktstr(((String)v)); },
+        [](const Variant &v)->Scheme_Object * { return gdstrname2rktsym(((StringName)v)); },
+        [](const Variant &v)->Scheme_Object * { return gdstr2rktstr(((String)v)); },
         variant_to_wrapper<Scheme_RID, RID>,
         variant_to_wrapper<Scheme_GodotObject, Object*>,
         variant_to_wrapper<Scheme_Callable, Callable>,
@@ -208,12 +239,12 @@ private:
     };
 
 public:
-    static BuiltinBinder* get_singleton();
+    static RacketBCBuiltinBinder *get_singleton();
 
     // Allocates memory for a builtin wrapper with Racket.
     template <typename T>
-    T* new_builtin_instance() {
-        T* obj = (T*)scheme_malloc_allow_interior(sizeof(T));
+    T *new_builtin_instance() {
+        T *obj = (T*)scheme_malloc_allow_interior(sizeof(T));
         // TODO: haven't found if BC has a malloc method that sets the this type field automatically
         obj->header.so.type = T::scheme_type; //builtin_wrapper_type_id;
         obj->header.variant_type = T::wrapper_variant_type;
@@ -221,19 +252,19 @@ public:
     }
 
     // Gets the Variant::Type associated with a given instance.
-    Variant::Type get_variant_type(Scheme_Object* obj);
+    Variant::Type get_variant_type(Scheme_Object *obj);
 
     // Allocates a Racket object and copies the value from the given Variant
     // into it.
-    Scheme_Object* variant_to_scheme_object(const Variant& v);
+    Scheme_Object *variant_to_scheme_object(const Variant &v);
 
     // Creates a Variant and copies the value from the given Racket object into
     // it.
-    Variant scheme_object_to_variant(Scheme_Object* obj);
+    Variant scheme_object_to_variant(Scheme_Object *obj);
 
     // Returns true if the given Racket object wraps a Godot builtin, else
     // returns false.
-    bool builtin_wrapperp(Scheme_Object* obj);
+    bool builtin_wrapperp(Scheme_Object *obj);
 
     // Registers builtin wrapper types with Racket. This must be called only
     // once while Racket is initializing before any instances are created.

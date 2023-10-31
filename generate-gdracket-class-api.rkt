@@ -3,6 +3,43 @@
 (require json)
 (require fmt)
 
+;(require "./gdracket/gd-script-classes.rkt")
+
+
+(define (godot-name->racket-name str)
+  (string-replace (format "~a" str) "_" "-"))
+
+(define (godot-field->getter-fn-symbol str)
+  (string->symbol (format "get-~a" (godot-name->racket-name str))))
+
+(define (godot-field->setter-fn-symbol str)
+  (string->symbol (format "set!-~a" (godot-name->racket-name str))))
+
+(provide class-info->class-expression)
+(define (class-info->class-expression info-dict)
+  (begin
+    (define class-properties (hash-ref info-dict 'properties '()))
+    (define class-methods (hash-ref info-dict 'methods '()))
+    (define super-class-object (string->symbol (hash-ref info-dict 'inherits "godot-object-base"))))
+
+    (define method-clauses
+      (for/list ([method-hash class-methods])
+        (define method-name (string->symbol (hash-ref method-hash 'name)))
+        (define rkt-method-name (string->symbol (godot-name->racket-name method-name)))
+        (define arglist
+          (for/list ([arg-hash (hash-ref method-hash 'arguments '())]) (string->symbol (hash-ref arg-hash 'name))))
+        `(define/public (,rkt-method-name ,@arglist) (gdobject-invoke ',method-name ,@arglist))))
+
+    (define field-clauses
+      (for/fold ([lst '()]) ([prop-hash class-properties])
+        (define prop-name-sym (string->symbol (hash-ref prop-hash 'name)))
+        (list* `(define/final (,(godot-field->getter-fn-symbol prop-name-sym)) (gdobject-get ',prop-name-sym))
+               `(define/final (,(godot-field->setter-fn-symbol prop-name-sym) valu) (gdobject-set ',prop-name-sym valu))
+               lst)))
+;        `(field (,(string->symbol (hash-ref prop-hash 'name)) '()))))
+
+    `(class ,super-class-object (super-new) ,@field-clauses ,@method-clauses))
+
 
 (define gdextension-method->datum
   (λ (jsexpr)
@@ -90,8 +127,12 @@
             ['Object '((godot-object-mixin))]
             [_ '()])])
 
-      `(begin (provide ,class-name) (gd-api-class ,class-name ,inherits ,methods ,properties ,@extra-exprs) ,@enums))))
-
+      `(begin
+         (provide ,class-name)
+         (define ,class-name ,(class-info->class-expression jsexpr))
+         ,@enums))))
+;         (define ,class-name (class ,inherits (super-new) ,methods ,properties ,@extra-exprs) ,@enums)))))
+;         (gd-api-class ,class-name ,inherits ,methods ,properties ,@extra-exprs) ,@enums))))
 
 
 
@@ -102,12 +143,12 @@
       (map gdextension-class->datum
 ;           (vector->list (vector-take (list->vector gd-classes) 10))
 ;           gd-classes
-           (filter (λ (gd-class) (vector-member (hash-ref gd-class 'name) #("RefCounted" "Object"))) gd-classes)
+           (filter (λ (gd-class) (vector-member (hash-ref gd-class 'name) #("RefCounted" "Object" "Node"))) gd-classes)
            ))))
 
 
 (define file-header
-  '(begin (require "./gd-script-classes.rkt")))
+  '(begin (require "./gd-object-base.rkt")))
 
 
 (define (print-usage-exit)
@@ -144,6 +185,6 @@
 ; (read-json (open-input-string "{\"name\": \"foo\", \"arguments\": [{\"name\": \"foo\", \"type\": \"int\"}]}")))
 
 (parameterize
- ([current-directory "D:/projects/godot/gdextension-helloworld2"]
+ ([current-directory "D:/projects/godot/gdracket"]
   [current-command-line-arguments #("godot-cpp/gdextension/extension_api.json" "gdracket/gd-class-api.rkt")])
  (main))

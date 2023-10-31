@@ -42,36 +42,6 @@ struct GDProperty {
     operator Variant() const;
     operator PropertyInfo() const;
 
-    // void set_variant_type() {
-    //     type = GDEXTENSION_VARIANT_TYPE_NIL;
-    //     usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_NIL_IS_VARIANT;
-    // }
-
-    // void set_object_type(const String &p_type) {
-    //     type = GDEXTENSION_VARIANT_TYPE_OBJECT;
-
-    //     if (RacketClassDB::is_parent_class(p_type, "Resource")) {
-    //         hint = PROPERTY_HINT_RESOURCE_TYPE;
-    //         hint_string = p_type;
-    //     } else {
-    //         class_name = p_type;
-    //     }
-    // }
-
-    // void set_typed_array_type(const GDProperty &p_type) {
-    //     type = GDEXTENSION_VARIANT_TYPE_ARRAY;
-    //     hint = PROPERTY_HINT_ARRAY_TYPE;
-
-    //     if (p_type.type == GDEXTENSION_VARIANT_TYPE_OBJECT) {
-    //         if (p_type.hint == PROPERTY_HINT_RESOURCE_TYPE) {
-    //             hint_string = RacketUtil::resource_type_hint(p_type.hint_string);
-    //         } else {
-    //             hint_string = p_type.class_name;
-    //         }
-    //     } else {
-    //         hint_string = Variant::get_type_name(Variant::Type(p_type.type));
-    //     }
-    // }
 };
 
 struct GDClassProperty {
@@ -132,8 +102,6 @@ struct GDClassDefinition {
     Ref<Script> base_script = nullptr;
 
     String icon_path;
-
-    // ThreadPermissions permissions = PERMISSION_BASE;
 
     bool is_tool = false;
 

@@ -1,5 +1,8 @@
-#include "./racket_builtin_binder.h"
-#include "./racket_binder_util.h"
+#include "binder/racket_builtin_binder.h"
+
+#include "binder/racket_bc_runtime.h"
+#include "binder/racket_builtin_binder.h"
+#include "binder/racket_binder_util.h"
 
 // Storage for Scheme_Type ids
 Scheme_Type Scheme_Vector2::scheme_type = 0;
@@ -37,12 +40,41 @@ Scheme_Type Scheme_PackedVector3Array::scheme_type = 0;
 Scheme_Type Scheme_PackedColorArray::scheme_type = 0;
 
 
-BuiltinBinder* BuiltinBinder::singleton;
+RacketCallableCustomMethodPointer::RacketCallableCustomMethodPointer(Object* p_instance, Scheme_Object* p_proc) {
+    instance = p_instance;
+    procedure = p_proc;
+}
 
 
-BuiltinBinder* BuiltinBinder::get_singleton() {
+RacketCallableCustomMethodPointer::~RacketCallableCustomMethodPointer() {
+    procedure = nullptr;
+}
+
+
+void RacketCallableCustomMethodPointer::call(const Variant **p_arguments, int p_argcount, Variant &r_return_value, GDExtensionCallError &r_call_error) const {
+    Scheme_Object* args_list = scheme_null;
+    RacketBCRuntime* runtime = RacketBCRuntime::get_singleton();
+    RacketBCBuiltinBinder* builtinBinder = RacketBCBuiltinBinder::get_singleton();
+    Scheme_Object* res;
+    bool ok;
+    const Variant *v;
+
+    for (int i = p_argcount - 1; i >= 0; i--) {
+        v = p_arguments[i];
+        args_list = scheme_make_pair(builtinBinder->variant_to_scheme_object(v), scheme_null);
+    }
+
+    runtime->eval_handle(scheme_make_pair(procedure, args_list), &res, &ok);
+    if (ok) {
+        r_return_value = builtinBinder->scheme_object_to_variant(res);
+    }
+}
+
+
+RacketBCBuiltinBinder* RacketBCBuiltinBinder::singleton;
+RacketBCBuiltinBinder* RacketBCBuiltinBinder::get_singleton() {
     if (singleton == nullptr) {
-        singleton = new BuiltinBinder();
+        singleton = new RacketBCBuiltinBinder();
     }
     return singleton;
 }
@@ -52,7 +84,7 @@ BuiltinBinder* BuiltinBinder::get_singleton() {
 // registers Scheme_Type IDs for each Godot builtin struct wrapper.
 // TODO: figure out if there's a native printer/reader to hook into for these
 // IMPORTANT: This must be called only once when the Racket runtime initializes.
-void BuiltinBinder::register_builtin_types() {
+void RacketBCBuiltinBinder::register_builtin_types() {
     _register_builtin(Scheme_Vector2,            "Vector2");
     _register_builtin(Scheme_Vector2i,           "Vector2i");
     _register_builtin(Scheme_Rect2,              "Rect2");
@@ -92,12 +124,15 @@ void BuiltinBinder::register_builtin_types() {
 }
 
 
-Scheme_Object* BuiltinBinder::variant_to_scheme_object(const godot::Variant& v) {
-    return (this->builtin_to_wrapper_funcs[v.get_type()])(v);
+Scheme_Object* RacketBCBuiltinBinder::variant_to_scheme_object(const godot::Variant &v) {
+    Variant::Type vtype = v.get_type();
+    _debug_logln("{0}", vtype);
+    VariantToSchemeObject convFunc = variant_to_scheme_object_funcs[vtype];
+    return convFunc(v);
 }
 
 
-Variant::Type BuiltinBinder::get_variant_type(Scheme_Object* obj) {
+Variant::Type RacketBCBuiltinBinder::get_variant_type(Scheme_Object* obj) {
     if (SCHEME_CHAR_STRINGP(obj)) {
         return Variant::Type::STRING;
     }
@@ -122,16 +157,13 @@ Variant::Type BuiltinBinder::get_variant_type(Scheme_Object* obj) {
 }
 
 
-Variant BuiltinBinder::scheme_object_to_variant(Scheme_Object* obj) {
+Variant RacketBCBuiltinBinder::scheme_object_to_variant(Scheme_Object* obj) {
     Variant::Type typ = get_variant_type(obj);
-    if (typ != Variant::Type::NIL) {
-        return this->wrapper_to_builtin_funcs[typ](obj);
-    }
-    return Variant();
+    return this->scheme_object_to_variant_funcs[typ](obj);
 }
 
 
-bool BuiltinBinder::builtin_wrapperp(Scheme_Object* obj) {
+bool RacketBCBuiltinBinder::builtin_wrapperp(Scheme_Object* obj) {
     Scheme_Type obj_type = SCHEME_TYPE(obj);
     return obj_type >= builtin_scheme_type_min && obj_type <= builtin_scheme_type_max;
 }

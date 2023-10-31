@@ -3,6 +3,7 @@
 #include "racket_language.h"
 #include "racket_script.h"
 #include "binder/racket_bc_binder.h"
+#include "binder/racket_bc_runtime.h"
 
 // TODO: loads of copy-pasted stuff here from other language plugins. This
 // merits a lot of re-work and more judicious inclusion
@@ -14,6 +15,7 @@ RacketLanguage* RacketLanguage::singleton;
 
 RacketLanguage::RacketLanguage() {
     singleton = this;
+    RacketBCRuntime::get_singleton();
     binder = RacketBCBinder::get_singleton();
     instance_lock.instantiate();
 }

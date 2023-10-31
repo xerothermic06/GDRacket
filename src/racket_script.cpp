@@ -4,6 +4,9 @@
 #include "racket_script.h"
 
 
+#define GD_RKT_EXT ".gd.rkt"
+#define RACKET_MODULE "RacketModule"
+
 RacketScript::RacketScript() {
     language = RacketLanguage::get_singleton();
 }
@@ -37,13 +40,18 @@ bool RacketScript::_has_method(const StringName& method) const {
 }
 
 
+bool RacketScript::_has_static_method(const StringName& method) const {
+    return false; //class_definition.methods.has(method);
+}
+
+
 bool RacketScript::_is_tool() const {
     return false;
 }
 
 
 bool RacketScript::_is_valid() const {
-    return is_valid;
+    return true; //is_valid;
 }
 
 
@@ -149,6 +157,10 @@ void* RacketScript::_instance_create(Object* for_object) const {
     return RacketScriptInstance::create_instance(this, for_object);
 }
 
+void* RacketScript::_placeholder_instance_create(Object *for_object) const {
+    return nullptr;
+}
+
 
 TypedArray<Dictionary> RacketScript::_get_documentation() const {
     return Array();
@@ -247,7 +259,7 @@ RacketScriptResourceLoader::~RacketScriptResourceLoader() {}
 
 
 Variant RacketScriptResourceLoader::_load_module(const String &path) const {
-    Ref<SchemeModule> modul;
+    Ref<RacketModule> modul;
     modul.instantiate();
     Error err;
     Ref<FileAccess> file = FileAccess::open(path, FileAccess::READ);
@@ -279,7 +291,7 @@ Variant RacketScriptResourceLoader::_load_script(const String &path) const {
 }
 
 Variant RacketScriptResourceLoader::_load(const String &path, const String &original_path, bool use_sub_threads, int32_t cache_mode) const {
-    if (path.ends_with(".gd.rkt")) {
+    if (path.ends_with(GD_RKT_EXT)) {
         return _load_script(path);
     }
     return _load_module(path);
@@ -296,14 +308,14 @@ PackedStringArray RacketScriptResourceLoader::_get_recognized_extensions() const
 
 
 bool RacketScriptResourceLoader::_handles_type(const StringName& p_type) const {
-    return (p_type == RacketLanguage::s_get_type() || p_type == StringName("SchemeModule"));
+    return (p_type == RacketLanguage::s_get_type() || p_type == StringName(RACKET_MODULE));
 }
 
 String RacketScriptResourceLoader::_get_resource_type(const String& p_path) const {
-    if (p_path.ends_with(".gd.rkt")) {
+    if (p_path.ends_with(GD_RKT_EXT)) {
         return RacketLanguage::s_get_type();
     }
-    return "SchemeModule";
+    return RACKET_MODULE;
 }
 
 PackedStringArray RacketScriptResourceLoader::_get_dependencies(const String& path, bool add_types) const {
@@ -317,10 +329,10 @@ bool RacketScriptResourceLoader::_recognize_path(const String &path, const Strin
 
 
 String RacketScriptResourceLoader::_get_resource_script_class(const String &path) const {
-    if (path.ends_with(".gd.rkt")) {
+    if (path.ends_with(GD_RKT_EXT)) {
         return RacketLanguage::s_get_type();
     }
-    return "SchemeModule";
+    return RACKET_MODULE;
 }
 
 
@@ -334,12 +346,12 @@ RacketScriptResourceSaver::~RacketScriptResourceSaver() {}
 
 Error RacketScriptResourceSaver::_save(const Ref<Resource> &resource, const String &path, uint32_t flags) {
     String source;
-    if (path.ends_with(".gd.rkt")) {
+    if (path.ends_with(GD_RKT_EXT)) {
         Ref<RacketScript> script = resource;
         ERR_FAIL_COND_V(script.is_null(), ERR_INVALID_PARAMETER);
         source = script->get_source_code();
     } else {
-        Ref<SchemeModule> modul = resource;
+        Ref<RacketModule> modul = resource;
         source = modul->get_source_code();
     }
 

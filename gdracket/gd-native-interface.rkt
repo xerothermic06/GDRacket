@@ -4,6 +4,7 @@
 
 (require
   racket/vector
+  racket/path
   racket/struct)
 
 (require (for-syntax syntax/parse syntax/parse/lib/function-header))
@@ -22,6 +23,7 @@
     (iter (void) vec))))
 
 
+
 (provide read-multi)
 (define read-multi
   (lambda (in)
@@ -29,24 +31,46 @@
                           (let ([valu (read in)])
                             (if (eq? valu eof)
                                 vec
-                                (read-rest in (vector-append vec `#(,valu) )))))])
+                                (read-rest in (vector-append vec `#(,valu))))))])
       (read-rest in #() ))))
+
+
+(define (exn->stack-trace exn (indent-size 2))
+  (string-join
+   (cons (exn-message exn)
+         (for/list ([ctx-pair
+                     (continuation-mark-set->context
+                      (exn-continuation-marks exn))])
+           (define srclc (cdr ctx-pair))
+           (if (srcloc? srclc)
+               (format "~a:~a" (file-name-from-path (srcloc-source srclc)) (srcloc-line srclc))
+               (format "~a" ctx-pair))))
+   (format "\n~a" (make-string indent-size #\space))))
 
 
 (provide app->result)
 (define-syntax app->result
   (syntax-rules ()
     [(app->result exprs ...)
-      (with-handlers
-        ([void
-          (lambda (exn)
-            (displayln (continuation-mark-set->context (exn-continuation-marks exn)))
-            (displayln (exn-message exn))
-            (flush-output)
-            (cons #f exn))])
-          (cons #t (begin exprs ...)))
-      ]))
+     (with-handlers
+         ([void
+           (lambda (exn)
+;             (displayln (continuation-mark-set->context (exn-continuation-marks exn)))
+             (displayln (exn->stack-trace exn))
+;             (displayln (exn-message exn))
+             (flush-output)
+             (cons #f exn))])
+       (cons #t (begin exprs ...)))
+     ]))
 
+
+(define (messup)
+  (begin
+    (define foo 1)
+    (define ht #hash((a . 1)))
+    (app->result (hash-ref ht 'x))))
+
+(messup)
 
 ; Root eval function for all calls into Racket from native library. Simplifies
 ; unexpected exception handling.
@@ -114,17 +138,14 @@
   (lambda (struct-inst) (struct->list struct-inst #:on-opaque 'return-false)))
 
 
-(provide print-cptr)
-(define print-cptr
-  (lambda (cptr)
-    (eval-handle `(display ,cptr))))
-
 
 ; The following procedures permit calling into GDRacket's native procedures by
 ; dynamic-requiring them from a primitive module named gdprimitive and caching
 ; them for later use.
 
-; 
+; returns a procedure that closes a native procedure from gd-primitive that is
+; cached after its first invocation.
+(provide gdprimitive-get-proc-cache)
 (define (gdprimitive-get-proc-cache proc-name)
   (define proc '())
   (λ args

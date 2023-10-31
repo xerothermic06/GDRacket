@@ -6,24 +6,22 @@
 #include "racket_script.h"
 #include <cstdio>
 
-// ReSharper disable CppClangTidyMiscMisplacedConst
-// ReSharper disable CppMemberFunctionMayBeConst
-
 
 GDExtensionScriptInstancePtr RacketScriptInstance::create_instance(const RacketScript* parent,
                                                                      godot::Object* host_object) {
-    auto parent_ref = Ref<RacketScript>(parent);
-    auto inst = memnew(RacketScriptInstance(parent_ref, host_object));
+    Ref<RacketScript> parent_ref = Ref<RacketScript>(parent);
+    RacketScriptInstance* inst = memnew(RacketScriptInstance(parent_ref, host_object));
 
     {
-        auto lock = parent->language->get_instance_lock();
+        MutexLock lock = parent->language->get_instance_lock();
         parent_ref->instances.insert(parent->get_instance_id(), inst);
     }
 
-    auto instance_info = &RacketScriptInstance::instance_info;
+    const GDExtensionScriptInstanceInfo2* instance_info =
+        const_cast<GDExtensionScriptInstanceInfo2*>(&RacketScriptInstance::instance_info);
 
-    GDExtensionScriptInstancePtr instPtr = godot::internal::gdextension_interface_script_instance_create(
-        instance_info, inst);
+    GDExtensionScriptInstancePtr instPtr =
+        godot::internal::gdextension_interface_script_instance_create2(instance_info, inst);
 
     return instPtr;
 }
@@ -241,9 +239,10 @@ GDExtensionVariantType s_get_property_type(
 }
 
 
-void s_notification(GDExtensionScriptInstanceDataPtr p_instance, int32_t p_what) {
+void s_notification(GDExtensionScriptInstanceDataPtr p_instance, int32_t p_what, GDExtensionBool p_reserved) {
     reinterpret_cast<RacketScriptInstance*>(p_instance)->notification(p_what);
 }
+
 
 GDExtensionScriptLanguagePtr s_get_language(GDExtensionScriptInstanceDataPtr p_instance) {
     return reinterpret_cast<RacketScriptInstance*>(p_instance)->get_language();
@@ -274,8 +273,8 @@ void s_free_method_list(GDExtensionScriptInstanceDataPtr p_instance, const GDExt
 }
 
 
-GDExtensionScriptInstanceInfo init_instance_info() {
-    GDExtensionScriptInstanceInfo instance_info;
+GDExtensionScriptInstanceInfo2 init_instance_info() {
+    GDExtensionScriptInstanceInfo2 instance_info;
 
     instance_info.set_func = s_set;
     instance_info.get_func = s_get;
@@ -331,4 +330,4 @@ GDExtensionScriptInstanceInfo init_instance_info() {
     return instance_info;
 }
 
-GDExtensionScriptInstanceInfo RacketScriptInstance::instance_info = init_instance_info();
+GDExtensionScriptInstanceInfo2 RacketScriptInstance::instance_info = init_instance_info();

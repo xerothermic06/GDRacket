@@ -29,25 +29,30 @@ bool RacketClassDB::class_has_method(const StringName &p_class_name, const Strin
 
 
 bool RacketClassDB::is_parent_class(const StringName &p_class_name, const StringName &p_inherits) {
-    return get_class_db()->call("is_parent_class", p_class_name, p_inherits);
+    static String method = "is_parent_class";
+    return get_class_db()->call(method, p_class_name, p_inherits);
 }
 
 
 StringName RacketClassDB::get_parent_class(const StringName &p_class_name) {
-    return get_class_db()->call("get_parent_class", p_class_name);
+    static String method = "get_parent_class";
+    return get_class_db()->call(method, p_class_name);
 }
 
 
-Array RacketClassDB::class_get_property_list(const StringName &p_class_name) {
-    return get_class_db()->call("class_get_property_list", p_class_name);
+Array RacketClassDB::class_get_property_list(const StringName &p_class_name, bool p_no_inherited) {
+    static String method = "class_get_property_list";
+    return get_class_db()->call(method, p_class_name, p_no_inherited);
 }
 
 
-Array RacketClassDB::class_get_method_list(const StringName &p_class_name) {
-    return get_class_db()->call("class_get_method_list", p_class_name);
+Array RacketClassDB::class_get_method_list(const StringName &p_class_name, bool p_no_inherited) {
+    static String method = "class_get_method_list";
+    return get_class_db()->call(method, p_class_name, p_no_inherited);
 }
 
 
 Object* RacketClassDB::instantiate(const StringName &p_class_name) {
-    return get_class_db()->call("instantiate", p_class_name);
+    static String method = "instantiate";
+    return get_class_db()->call(method, p_class_name);
 }

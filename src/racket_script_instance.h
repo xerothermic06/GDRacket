@@ -19,7 +19,7 @@ class RacketBinder;
 class RacketScriptInstance {
     friend class RacketBinder;
 
-    static GDExtensionScriptInstanceInfo instance_info;
+    static GDExtensionScriptInstanceInfo2 instance_info;
 
     Ref<RacketScript> script;
     // Godot object this instance is attached to
@@ -89,7 +89,7 @@ public:
 
 
 class SchemeScriptInstanceGlue {
-    static GDExtensionScriptInstanceInfo instance_info;
+    static GDExtensionScriptInstanceInfo2 instance_info;
 public:
     static GDExtensionPropertyInfo _convert_prop_info(PropertyInfo &p_info);
     static GDExtensionMethodInfo _convert_method_info(MethodInfo info);
